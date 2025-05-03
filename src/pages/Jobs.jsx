@@ -17,14 +17,23 @@ import {
   Paper,
   Alert,
   useTheme,
+  Stack,
+  TextField,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import BusinessIcon from "@mui/icons-material/Business";
 import WorkIcon from "@mui/icons-material/Work";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import SearchIcon from "@mui/icons-material/Search";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
+import ClearIcon from "@mui/icons-material/Clear";
 
 function Jobs() {
   const [filterCategory, setFilterCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const theme = useTheme();
 
   const jobs = [
@@ -34,6 +43,8 @@ function Jobs() {
       company: "Công ty ABC",
       location: "Hà Nội",
       category: "development",
+      salary: "15-25 triệu",
+      time: "Toàn thời gian",
     },
     {
       id: 2,
@@ -41,6 +52,8 @@ function Jobs() {
       company: "Công ty XYZ",
       location: "Hồ Chí Minh",
       category: "development",
+      salary: "20-30 triệu",
+      time: "Toàn thời gian",
     },
     {
       id: 3,
@@ -48,6 +61,8 @@ function Jobs() {
       company: "Công ty DEF",
       location: "Đà Nẵng",
       category: "design",
+      salary: "15-22 triệu",
+      time: "Toàn thời gian",
     },
     {
       id: 4,
@@ -55,6 +70,8 @@ function Jobs() {
       company: "Công ty GHI",
       location: "Hà Nội",
       category: "management",
+      salary: "30-45 triệu",
+      time: "Toàn thời gian",
     },
     {
       id: 5,
@@ -62,6 +79,8 @@ function Jobs() {
       company: "Công ty JKL",
       location: "Hồ Chí Minh",
       category: "data",
+      salary: "18-25 triệu",
+      time: "Toàn thời gian",
     },
     {
       id: 6,
@@ -69,16 +88,37 @@ function Jobs() {
       company: "Công ty MNO",
       location: "Hà Nội",
       category: "development",
+      salary: "25-35 triệu",
+      time: "Toàn thời gian",
     },
   ];
 
-  const filteredJobs =
-    filterCategory === "all"
-      ? jobs
-      : jobs.filter((job) => job.category === filterCategory);
+  // Lọc việc làm dựa trên cả danh mục và tìm kiếm
+  const filteredJobs = jobs.filter((job) => {
+    // Lọc theo danh mục
+    const categoryMatch =
+      filterCategory === "all" || job.category === filterCategory;
+
+    // Lọc theo tìm kiếm
+    const searchMatch =
+      searchQuery === "" ||
+      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.location.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return categoryMatch && searchMatch;
+  });
 
   const handleCategoryChange = (event) => {
     setFilterCategory(event.target.value);
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
   };
 
   const getCategoryLabel = (category) => {
@@ -112,111 +152,339 @@ function Jobs() {
   };
 
   return (
-    <Box sx={{ py: 4 }}>
+    <Box
+      sx={{
+        py: 6,
+        backgroundImage:
+          "linear-gradient(to bottom, rgba(100, 108, 255, 0.04), rgba(100, 108, 255, 0.02))",
+        minHeight: "100vh",
+      }}
+    >
       <Container maxWidth="lg">
-        <Typography variant="h3" component="h1" gutterBottom>
-          Việc làm
-        </Typography>
-
-        <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-          <Box
+        {/* Header */}
+        <Box
+          sx={{
+            mb: 5,
+            textAlign: "center",
+            maxWidth: "800px",
+            mx: "auto",
+          }}
+        >
+          <Typography
+            variant="h3"
+            component="h1"
+            gutterBottom
             sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              justifyContent: "space-between",
-              alignItems: { xs: "flex-start", md: "center" },
-              gap: 2,
+              fontWeight: "bold",
+              color: theme.palette.primary.dark,
+              mb: 2,
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <FilterListIcon color="primary" />
-              <FormControl variant="outlined" sx={{ minWidth: 200 }}>
-                <InputLabel id="category-filter-label">Danh mục</InputLabel>
-                <Select
-                  labelId="category-filter-label"
-                  id="category-filter"
-                  value={filterCategory}
-                  onChange={handleCategoryChange}
-                  label="Danh mục"
-                >
-                  <MenuItem value="all">Tất cả</MenuItem>
-                  <MenuItem value="development">Phát triển</MenuItem>
-                  <MenuItem value="design">Thiết kế</MenuItem>
-                  <MenuItem value="management">Quản lý</MenuItem>
-                  <MenuItem value="data">Dữ liệu</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
+            Tìm kiếm việc làm
+          </Typography>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{
+              mb: 4,
+              fontSize: "1.1rem",
+            }}
+          >
+            Khám phá hàng nghìn cơ hội việc làm từ các công ty hàng đầu. Tìm
+            công việc phù hợp với kỹ năng và mục tiêu nghề nghiệp của bạn.
+          </Typography>
+        </Box>
 
-            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+        {/* Thanh tìm kiếm và lọc */}
+        <Paper
+          elevation={3}
+          sx={{
+            p: { xs: 3, md: 4 },
+            mb: 5,
+            borderRadius: 3,
+            background: "white",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+          }}
+        >
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            spacing={3}
+            alignItems={{ xs: "stretch", md: "center" }}
+          >
+            <TextField
+              fullWidth
+              placeholder="Tên vị trí, công ty hoặc địa điểm..."
+              variant="outlined"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="primary" />
+                  </InputAdornment>
+                ),
+                endAdornment: searchQuery && (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={clearSearch}>
+                      <ClearIcon />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                },
+              }}
+            />
+
+            <FormControl
+              sx={{
+                minWidth: { xs: "100%", md: 200 },
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                },
+              }}
+            >
+              <InputLabel id="category-filter-label">Danh mục</InputLabel>
+              <Select
+                labelId="category-filter-label"
+                id="category-filter"
+                value={filterCategory}
+                onChange={handleCategoryChange}
+                label="Danh mục"
+                startAdornment={
+                  <InputAdornment position="start">
+                    <FilterListIcon color="primary" sx={{ mr: 1 }} />
+                  </InputAdornment>
+                }
+              >
+                <MenuItem value="all">Tất cả</MenuItem>
+                <MenuItem value="development">Phát triển</MenuItem>
+                <MenuItem value="design">Thiết kế</MenuItem>
+                <MenuItem value="management">Quản lý</MenuItem>
+                <MenuItem value="data">Dữ liệu</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
+
+          <Box
+            sx={{
+              mt: 3,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              borderTop: "1px solid rgba(0,0,0,0.08)",
+              pt: 2,
+            }}
+          >
+            <Typography
+              variant="body1"
+              sx={{
+                fontWeight: 500,
+                color: theme.palette.primary.main,
+              }}
+            >
               Đang hiển thị {filteredJobs.length} việc làm
+            </Typography>
+
+            <Typography variant="body2" color="text.secondary">
+              Sắp xếp theo: Mới nhất
             </Typography>
           </Box>
         </Paper>
 
+        {/* Danh sách công việc */}
         {filteredJobs.length > 0 ? (
-          <Grid container spacing={3}>
+          <Grid container spacing={2}>
             {filteredJobs.map((job) => (
-              <Grid item xs={12} sm={6} md={4} key={job.id}>
+              <Grid
+                item
+                xs={12}
+                sm={6}
+                md={4}
+                lg={2.4}
+                key={job.id}
+                sx={{ mb: { xs: 2, sm: 2, md: 3 } }}
+              >
                 <Card
+                  elevation={2}
                   sx={{
                     height: "100%",
                     display: "flex",
                     flexDirection: "column",
-                    transition: "transform 0.2s, box-shadow 0.2s",
+                    transition: "all 0.3s ease",
+                    borderRadius: 3,
+                    overflow: "hidden",
+                    border: "1px solid rgba(0,0,0,0.06)",
+                    width: "100%",
+                    maxWidth: { xs: "100%", sm: "100%", md: "100%" },
                     "&:hover": {
-                      transform: "translateY(-8px)",
-                      boxShadow: 8,
-                      borderColor: "primary.main",
+                      transform: "translateY(-10px)",
+                      boxShadow: "0 15px 30px rgba(0,0,0,0.1)",
+                      borderColor: theme.palette.primary.main,
                     },
                   }}
                 >
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Box sx={{ mb: 2 }}>
+                  <CardContent
+                    sx={{
+                      flexGrow: 1,
+                      p: { xs: 2, md: 2.5 },
+                      "&:last-child": { pb: 2 },
+                    }}
+                  >
+                    <Box sx={{ mb: 1.5 }}>
                       <Chip
                         label={getCategoryLabel(job.category)}
                         color={getCategoryColor(job.category)}
                         size="small"
-                        sx={{ mb: 1 }}
+                        sx={{ mb: 1, fontWeight: 500, fontSize: "0.7rem" }}
                       />
                       <Typography
                         variant="h6"
                         component="h2"
                         gutterBottom
-                        color="primary"
+                        color="primary.dark"
+                        sx={{
+                          fontWeight: "bold",
+                          fontSize: {
+                            xs: "1rem",
+                            sm: "1rem",
+                            md: "0.9rem",
+                            lg: "0.95rem",
+                          },
+                          height: "2.5rem",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                        }}
                       >
                         {job.title}
                       </Typography>
                     </Box>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        mb: 1,
-                      }}
-                    >
-                      <BusinessIcon fontSize="small" color="action" />
-                      <Typography variant="body2">{job.company}</Typography>
-                    </Box>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                      }}
-                    >
-                      <LocationOnIcon fontSize="small" color="action" />
-                      <Typography variant="body2">{job.location}</Typography>
-                    </Box>
+
+                    <Stack spacing={1} sx={{ mb: 1 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        <BusinessIcon
+                          fontSize="small"
+                          color="action"
+                          sx={{ fontSize: "0.9rem" }}
+                        />
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: { xs: "0.85rem", lg: "0.8rem" },
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {job.company}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        <LocationOnIcon
+                          fontSize="small"
+                          color="action"
+                          sx={{ fontSize: "0.9rem" }}
+                        />
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: { xs: "0.85rem", lg: "0.8rem" },
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {job.location}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        <AttachMoneyIcon
+                          fontSize="small"
+                          color="action"
+                          sx={{ fontSize: "0.9rem" }}
+                        />
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: { xs: "0.85rem", lg: "0.8rem" },
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {job.salary}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        <AccessTimeIcon
+                          fontSize="small"
+                          color="action"
+                          sx={{ fontSize: "0.9rem" }}
+                        />
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontSize: { xs: "0.85rem", lg: "0.8rem" },
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {job.time}
+                        </Typography>
+                      </Box>
+                    </Stack>
                   </CardContent>
                   <Divider />
-                  <CardActions>
+                  <CardActions sx={{ p: { xs: 1.5, md: 1.5 } }}>
                     <Button
                       variant="contained"
                       color="primary"
                       fullWidth
-                      sx={{ mt: 1 }}
+                      sx={{
+                        py: 0.5,
+                        fontWeight: "bold",
+                        fontSize: {
+                          xs: "0.85rem",
+                          sm: "0.85rem",
+                          md: "0.75rem",
+                        },
+                        borderRadius: 2,
+                        transition: "all 0.3s ease",
+                        "&:hover": {
+                          transform: "translateY(-3px)",
+                          boxShadow: "0 5px 15px rgba(0,0,0,0.2)",
+                        },
+                      }}
                     >
                       Ứng tuyển ngay
                     </Button>
@@ -226,9 +494,17 @@ function Jobs() {
             ))}
           </Grid>
         ) : (
-          <Alert severity="info" sx={{ mt: 2 }}>
-            Không tìm thấy việc làm phù hợp với bộ lọc. Hãy thử lại với bộ lọc
-            khác.
+          <Alert
+            severity="info"
+            sx={{
+              mt: 2,
+              p: 3,
+              borderRadius: 2,
+              fontSize: "1rem",
+            }}
+          >
+            Không tìm thấy việc làm phù hợp với tiêu chí tìm kiếm. Hãy thử lại
+            với bộ lọc hoặc từ khóa khác.
           </Alert>
         )}
       </Container>

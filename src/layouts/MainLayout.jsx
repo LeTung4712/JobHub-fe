@@ -1,19 +1,50 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import Navbar from '../components/Navbar';
+import React from "react";
+import { Outlet } from "react-router-dom";
+import { Box, Container, Typography, useTheme } from "@mui/material";
+import Navbar from "../components/Navbar";
 
 function MainLayout() {
+  const theme = useTheme();
+  const currentYear = new Date().getFullYear();
+
   return (
-    <div className="main-layout">
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+      }}
+    >
       <Navbar />
-      <main className="content">
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          width: "100%",
+        }}
+      >
         <Outlet />
-      </main>
-      <footer className="footer">
-        <p>&copy; {new Date().getFullYear()} JobHub. Đã đăng ký bản quyền.</p>
-      </footer>
-    </div>
+      </Box>
+      <Box
+        component="footer"
+        sx={{
+          py: 3,
+          px: 2,
+          mt: "auto",
+          backgroundColor:
+            theme.palette.mode === "light"
+              ? theme.palette.grey[200]
+              : theme.palette.grey[900],
+        }}
+      >
+        <Container maxWidth="lg">
+          <Typography variant="body2" color="text.secondary" align="center">
+            &copy; {currentYear} JobHub. Đã đăng ký bản quyền.
+          </Typography>
+        </Container>
+      </Box>
+    </Box>
   );
 }
 
-export default MainLayout; 
+export default MainLayout;

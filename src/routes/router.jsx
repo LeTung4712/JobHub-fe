@@ -8,6 +8,8 @@ import MainLayout from '../layouts/MainLayout';
 import Home from '../pages/Home';
 import Jobs from '../pages/Jobs';
 import About from '../pages/About';
+import Login from '../pages/Login';
+import Register from '../pages/Register';
 
 // Định nghĩa routes
 const router = createBrowserRouter([
@@ -28,6 +30,14 @@ const router = createBrowserRouter([
         element: <About />
       },
       {
+        path: 'login',
+        element: <Login />
+      },
+      {
+        path: 'register',
+        element: <Register />
+      },
+      {
         path: '*',
         element: <div>404 - Không tìm thấy trang</div>
       }
@@ -35,4 +45,4 @@ const router = createBrowserRouter([
   }
 ]);
 
-export default router; 
+export default router;

@@ -481,134 +481,134 @@ function Jobs() {
           }}
         >
           <form onSubmit={handleSearchSubmit}>
-            <Stack
-              direction={{ xs: "column", md: "row" }}
-              spacing={{ xs: 2, md: 3 }}
-              alignItems={{ xs: "stretch", md: "center" }}
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            spacing={{ xs: 2, md: 3 }}
+            alignItems={{ xs: "stretch", md: "center" }}
+          >
+            <TextField
+              fullWidth
+              placeholder="Tên vị trí, công ty hoặc địa điểm..."
+              variant="outlined"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="primary" />
+                  </InputAdornment>
+                ),
+                endAdornment: searchQuery && (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={clearSearch}>
+                      <ClearIcon />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                },
+              }}
+            />
+
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                flexDirection: { xs: "row", md: "row" },
+                width: { xs: "100%", md: "auto" },
+              }}
             >
-              <TextField
-                fullWidth
-                placeholder="Tên vị trí, công ty hoặc địa điểm..."
-                variant="outlined"
-                value={searchQuery}
-                onChange={handleSearchChange}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon color="primary" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: searchQuery && (
-                    <InputAdornment position="end">
-                      <IconButton size="small" onClick={clearSearch}>
-                        <ClearIcon />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
+              <FormControl
                 sx={{
+                  flexGrow: { xs: 1, md: 0 },
+                  minWidth: { xs: "auto", md: 200 },
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 2,
                   },
                 }}
-              />
-
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 2,
-                  flexDirection: { xs: "row", md: "row" },
-                  width: { xs: "100%", md: "auto" },
-                }}
               >
-                <FormControl
+                <InputLabel id="category-filter-label">Danh mục</InputLabel>
+                <Select
+                  labelId="category-filter-label"
+                  id="category-filter"
+                  value={filterCategory}
+                  onChange={handleCategoryChange}
+                  label="Danh mục"
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <FilterListIcon color="primary" sx={{ mr: 1 }} />
+                    </InputAdornment>
+                  }
+                >
+                  <MenuItem value="all">Tất cả</MenuItem>
+                  <MenuItem value="development">Phát triển</MenuItem>
+                  <MenuItem value="design">Thiết kế</MenuItem>
+                  <MenuItem value="management">Quản lý</MenuItem>
+                  <MenuItem value="data">Dữ liệu</MenuItem>
+                </Select>
+              </FormControl>
+
+              {isMobile ? (
+                <Badge
+                  badgeContent={activeFiltersCount}
+                  color="primary"
                   sx={{
-                    flexGrow: { xs: 1, md: 0 },
-                    minWidth: { xs: "auto", md: 200 },
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 2,
+                    "& .MuiBadge-badge": {
+                      right: 10,
+                      top: 10,
                     },
                   }}
                 >
-                  <InputLabel id="category-filter-label">Danh mục</InputLabel>
-                  <Select
-                    labelId="category-filter-label"
-                    id="category-filter"
-                    value={filterCategory}
-                    onChange={handleCategoryChange}
-                    label="Danh mục"
-                    startAdornment={
-                      <InputAdornment position="start">
-                        <FilterListIcon color="primary" sx={{ mr: 1 }} />
-                      </InputAdornment>
-                    }
-                  >
-                    <MenuItem value="all">Tất cả</MenuItem>
-                    <MenuItem value="development">Phát triển</MenuItem>
-                    <MenuItem value="design">Thiết kế</MenuItem>
-                    <MenuItem value="management">Quản lý</MenuItem>
-                    <MenuItem value="data">Dữ liệu</MenuItem>
-                  </Select>
-                </FormControl>
-
-                {isMobile ? (
-                  <Badge
-                    badgeContent={activeFiltersCount}
-                    color="primary"
-                    sx={{
-                      "& .MuiBadge-badge": {
-                        right: 10,
-                        top: 10,
-                      },
-                    }}
-                  >
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={toggleFilters}
-                      startIcon={<TuneIcon />}
-                      fullWidth
-                      sx={{
-                        borderRadius: 2,
-                        height: "56px",
-                      }}
-                    >
-                      Bộ lọc
-                    </Button>
-                  </Badge>
-                ) : (
                   <Button
-                    variant={showFilters ? "contained" : "outlined"}
+                    variant="contained"
                     color="primary"
                     onClick={toggleFilters}
                     startIcon={<TuneIcon />}
-                    sx={{ borderRadius: 2, whiteSpace: "nowrap" }}
+                    fullWidth
+                    sx={{
+                      borderRadius: 2,
+                      height: "56px",
+                    }}
                   >
-                    Bộ lọc khác
-                    {activeFiltersCount > 0 && (
-                      <Box
-                        component="span"
-                        sx={{
-                          ml: 1,
-                          bgcolor: "white",
-                          color: "primary.main",
-                          width: 20,
-                          height: 20,
-                          borderRadius: "50%",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "0.75rem",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        {activeFiltersCount}
-                      </Box>
-                    )}
+                    Bộ lọc
                   </Button>
-                )}
-              </Box>
-            </Stack>
+                </Badge>
+              ) : (
+                <Button
+                  variant={showFilters ? "contained" : "outlined"}
+                  color="primary"
+                  onClick={toggleFilters}
+                  startIcon={<TuneIcon />}
+                  sx={{ borderRadius: 2, whiteSpace: "nowrap" }}
+                >
+                  Bộ lọc khác
+                  {activeFiltersCount > 0 && (
+                    <Box
+                      component="span"
+                      sx={{
+                        ml: 1,
+                        bgcolor: "white",
+                        color: "primary.main",
+                        width: 20,
+                        height: 20,
+                        borderRadius: "50%",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "0.75rem",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {activeFiltersCount}
+                    </Box>
+                  )}
+                </Button>
+              )}
+            </Box>
+          </Stack>
           </form>
 
           {/* Bộ lọc mở rộng cho desktop */}

@@ -48,7 +48,14 @@ function About() {
     <Box sx={{ py: 4 }}>
       <Container maxWidth="lg">
         <Box textAlign="center" mb={6}>
-          <Typography variant="h3" component="h1" gutterBottom>
+          <Typography
+            variant="h3"
+            component="h1"
+            gutterBottom
+            sx={{
+              color: "text.secondary",
+            }}
+          >
             Về JobHub
           </Typography>
           <Typography
@@ -69,7 +76,14 @@ function About() {
         <Grid container spacing={4}>
           <Grid item xs={12} md={6}>
             <Box>
-              <Typography variant="h4" component="h2" gutterBottom>
+              <Typography
+                variant="h4"
+                component="h2"
+                gutterBottom
+                sx={{
+                  color: "text.secondary",
+                }}
+              >
                 Sứ mệnh của chúng tôi
               </Typography>
               <Typography
@@ -106,7 +120,14 @@ function About() {
                 borderRadius: 2,
               }}
             >
-              <Typography variant="h5" component="h3" gutterBottom>
+              <Typography
+                variant="h5"
+                component="h3"
+                gutterBottom
+                sx={{
+                  color: "text.secondary",
+                }}
+              >
                 JobHub trong số liệu
               </Typography>
               <Box sx={{ mt: 2 }}>
@@ -141,6 +162,9 @@ function About() {
             component="h2"
             textAlign="center"
             gutterBottom
+            sx={{
+              color: "text.secondary",
+            }}
           >
             Giá trị cốt lõi
           </Typography>
@@ -175,7 +199,13 @@ function About() {
                       >
                         {value.icon}
                       </Avatar>
-                      <Typography variant="h5" component="h3">
+                      <Typography
+                        variant="h5"
+                        component="h3"
+                        sx={{
+                          color: "text.secondary",
+                        }}
+                      >
                         {value.title}
                       </Typography>
                       <Typography variant="body1" color="text.secondary">
@@ -201,7 +231,13 @@ function About() {
             borderRadius: 2,
           }}
         >
-          <Typography variant="h5" gutterBottom>
+          <Typography
+            variant="h5"
+            gutterBottom
+            sx={{
+              color: "text.secondary",
+            }}
+          >
             Bạn muốn tìm kiếm cơ hội nghề nghiệp mới?
           </Typography>
           <Typography variant="body1">

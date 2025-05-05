@@ -49,12 +49,12 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <Jobs />,
-          },
-          {
+        element: <Jobs />,
+      },
+      {
             path: ":slug/:id",
-            element: <JobDetail />,
-          },
+        element: <JobDetail />,
+      },
         ],
       },
 
@@ -84,13 +84,13 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <PostList />,
-          },
-          {
+        element: <PostList />,
+      },
+      {
             path: "create",
             element: <ProtectedRoute element={<CreatePost />} />,
-          },
-          {
+      },
+      {
             path: "edit/:id",
             element: <ProtectedRoute element={<EditPost />} />,
           },

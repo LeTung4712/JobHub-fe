@@ -20,11 +20,13 @@ import heroBgDesktop from "../assets/ApartmentCoder.png";
 import heroBgMobile from "../assets/ApartmentCoderSm-mobile.png";
 import featureBgDesktop from "../assets/find-talent-2x.jpg";
 import featureBgMobile from "../assets/find-talent-mobile-2x.jpg";
+import { useAuth } from "../App";
 
 function Home() {
   const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { isAuthenticated } = useAuth();
 
   // Chọn hình ảnh phù hợp dựa trên kích thước màn hình
   const heroBgImage = isMobile ? heroBgMobile : heroBgDesktop;
@@ -188,26 +190,28 @@ function Home() {
                 >
                   Tìm việc ngay
                 </Button>
-                <Button
-                  variant="outlined"
-                  size="large"
-                  onClick={() => navigate("/register")}
-                  sx={{
-                    px: 4,
-                    py: 1.5,
-                    color: "white",
-                    borderColor: "white",
-                    "&:hover": {
+                {!isAuthenticated && (
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    onClick={() => navigate("/register")}
+                    sx={{
+                      px: 4,
+                      py: 1.5,
+                      color: "white",
                       borderColor: "white",
-                      backgroundColor: "rgba(255,255,255,0.2)",
-                      transform: "translateY(-3px)",
-                      boxShadow: "0 6px 10px rgba(0,0,0,0.2)",
-                    },
-                    transition: "all 0.3s ease",
-                  }}
-                >
-                  Đăng ký tài khoản
-                </Button>
+                      "&:hover": {
+                        borderColor: "white",
+                        backgroundColor: "rgba(255,255,255,0.2)",
+                        transform: "translateY(-3px)",
+                        boxShadow: "0 6px 10px rgba(0,0,0,0.2)",
+                      },
+                      transition: "all 0.3s ease",
+                    }}
+                  >
+                    Đăng ký tài khoản
+                  </Button>
+                )}
               </Stack>
             </Box>
           </Box>

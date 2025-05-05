@@ -22,6 +22,7 @@ import GoogleIcon from "@mui/icons-material/Google";
 import FacebookIcon from "@mui/icons-material/Facebook";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import { useAuth } from "../../App"; // Import useAuth hook
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -29,9 +30,12 @@ function Login() {
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const { login, isAuthenticated } = useAuth(); // Sử dụng AuthContext
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -47,9 +51,48 @@ function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Xử lý đăng nhập ở đây
-    console.log("Đăng nhập với:", formData);
+    setLoading(true);
+    setError(null);
+
+    // Giả lập đăng nhập
+    setTimeout(() => {
+      // Kiểm tra email và password đơn giản
+      if (formData.email && formData.password.length >= 6) {
+        // Tạo thông tin người dùng đăng nhập thành công
+        const userData = {
+          id: "user123",
+          email: formData.email,
+          name: "Người dùng", // Giả lập tên người dùng
+          role: "user", // Vai trò: user hoặc employer
+          avatar: null, // Không có avatar mặc định
+          isAuthenticated: true,
+          token: "fake-jwt-token-" + Math.random().toString(36).substring(2),
+        };
+
+        // Sử dụng hàm login từ AuthContext thay vì lưu trực tiếp vào localStorage
+        login(userData);
+
+        console.log("Đăng nhập thành công:", userData);
+
+        // Chuyển hướng về trang chủ sau khi đăng nhập
+        navigate("/");
+      } else {
+        // Hiển thị lỗi nếu đăng nhập thất bại
+        setError(
+          "Email hoặc mật khẩu không hợp lệ. Mật khẩu phải có ít nhất 6 ký tự."
+        );
+      }
+      setLoading(false);
+    }, 1000); // Giả lập delay 1 giây
   };
+
+  // Kiểm tra xem người dùng đã đăng nhập chưa thông qua AuthContext
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      // Nếu đã đăng nhập, chuyển hướng về trang chủ
+      navigate("/");
+    }
+  }, [isAuthenticated, navigate]);
 
   return (
     <Box
@@ -325,6 +368,7 @@ function Login() {
                       fullWidth
                       variant="contained"
                       size="large"
+                      disabled={loading}
                       sx={{
                         py: 1.8,
                         borderRadius: 2,
@@ -341,8 +385,16 @@ function Login() {
                         },
                       }}
                     >
-                      Đăng nhập
+                      {loading ? "Đang xử lý..." : "Đăng nhập"}
                     </Button>
+
+                    {error && (
+                      <Box sx={{ mt: 2, textAlign: "center" }}>
+                        <Typography variant="body2" color="error">
+                          {error}
+                        </Typography>
+                      </Box>
+                    )}
 
                     <Box sx={{ mt: 3, textAlign: "center" }}>
                       <Typography

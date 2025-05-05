@@ -6,11 +6,16 @@ import MainLayout from "../layouts/MainLayout";
 
 // Pages
 import Home from "../pages/Home";
-import Jobs from "../pages/Jobs";
+import Jobs from "../pages/jobs/Jobs";
 import About from "../pages/About";
-import Login from "../pages/Login";
-import Register from "../pages/Register";
-import JobDetail from "../pages/JobDetail";
+import Login from "../pages/auth/Login";
+import Register from "../pages/auth/Register";
+import JobDetail from "../pages/jobs/JobDetail";
+import Profile from "../pages/user/Profile";
+import Dashboard from "../pages/user/Dashboard";
+import PostList from "../pages/posts/PostList";
+import CreatePost from "../pages/posts/CreatePost";
+import EditPost from "../pages/posts/EditPost";
 
 // Định nghĩa routes
 const router = createBrowserRouter([
@@ -27,7 +32,7 @@ const router = createBrowserRouter([
         element: <Jobs />,
       },
       {
-        path: "job/:id",
+        path: "jobs/:id",
         element: <JobDetail />,
       },
       {
@@ -41,6 +46,26 @@ const router = createBrowserRouter([
       {
         path: "register",
         element: <Register />,
+      },
+      {
+        path: "profile",
+        element: <Profile />,
+      },
+      {
+        path: "dashboard",
+        element: <Dashboard />,
+      },
+      {
+        path: "posts",
+        element: <PostList />,
+      },
+      {
+        path: "posts/create",
+        element: <CreatePost />,
+      },
+      {
+        path: "posts/edit/:id",
+        element: <EditPost />,
       },
       {
         path: "*",

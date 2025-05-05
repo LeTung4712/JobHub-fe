@@ -25,6 +25,9 @@ import {
   StepLabel,
   useMediaQuery,
   Fab,
+  CircularProgress,
+  IconButton,
+  Slider,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -40,8 +43,14 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
+import CloseIcon from "@mui/icons-material/Close";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { createJob } from "../../api/jobs";
 
 // Component hiển thị panel cho mỗi tab
 function TabPanel(props) {
@@ -74,12 +83,23 @@ function CreatePost() {
     experience: "entry",
     description: "",
     requirements: [],
+    benefits: [],
     deadline: null,
+    industry: "",
+    companySize: "",
+    website: "",
+    salaryRange: [10, 25], // Mức lương mặc định từ 10-25 triệu
   });
   const [requirementInput, setRequirementInput] = useState("");
+  const [benefitInput, setBenefitInput] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [cvFile, setCvFile] = useState(null);
+  const [cvFileName, setCvFileName] = useState("");
+  const [cvError, setCvError] = useState("");
 
   const theme = useTheme();
   const navigate = useNavigate();
@@ -222,7 +242,12 @@ function CreatePost() {
         experience: "entry",
         description: "",
         requirements: [],
+        benefits: [],
         deadline: null,
+        industry: "",
+        companySize: "",
+        website: "",
+        salaryRange: [10, 25], // Mức lương mặc định từ 10-25 triệu
       });
     }
   };
@@ -259,8 +284,94 @@ function CreatePost() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const addBenefit = () => {
+    if (benefitInput.trim() !== "") {
+      setFormData((prev) => ({
+        ...prev,
+        benefits: [...prev.benefits, benefitInput.trim()],
+      }));
+      setBenefitInput("");
+    }
+  };
+
+  const removeBenefit = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      benefits: prev.benefits.filter((_, i) => i !== index),
+    }));
+  };
+
+  // Kiểm tra đăng nhập
+  const isAuthenticated = () => {
+    return localStorage.getItem("token") !== null;
+  };
+
+  // Xử lý upload CV
+  const handleCvUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Kiểm tra kích thước file (giới hạn 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setCvError("File không được vượt quá 5MB");
+        return;
+      }
+
+      // Kiểm tra định dạng file (PDF, DOC, DOCX)
+      const fileType = file.type;
+      const validTypes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
+
+      if (!validTypes.includes(fileType)) {
+        setCvError("Chỉ chấp nhận file PDF, DOC hoặc DOCX");
+        return;
+      }
+
+      setCvFile(file);
+      setCvFileName(file.name);
+      setCvError("");
+    }
+  };
+
+  // Xóa CV đã upload
+  const handleRemoveCv = () => {
+    setCvFile(null);
+    setCvFileName("");
+  };
+
+  // Xử lý thay đổi khoảng lương
+  const handleSalaryRangeChange = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      salaryRange: newValue,
+      // Cập nhật cả trường salary để tương thích với phiên bản cũ
+      salary: `${newValue[0]}-${newValue[1]} triệu`,
+    }));
+  };
+
+  // Format value cho Slider lương
+  const valueLabelFormat = (value) => {
+    return `${value} triệu`;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Kiểm tra người dùng đã đăng nhập chưa
+    if (!isAuthenticated()) {
+      // Hiển thị thông báo lỗi
+      setSubmitError(true);
+      setSuccessMessage("Vui lòng đăng nhập để đăng bài");
+
+      // Chuyển hướng đến trang đăng nhập sau 2 giây
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+      return;
+    }
+
     // Validate form
     if (
       !formData.title ||
@@ -269,6 +380,15 @@ function CreatePost() {
       !formData.description
     ) {
       setSubmitError(true);
+      setSuccessMessage("Vui lòng điền đầy đủ các trường bắt buộc");
+      setTimeout(() => setSubmitError(false), 5000);
+      return;
+    }
+
+    // Kiểm tra CV đối với bài đăng tìm việc
+    if (postType === "seeking" && !cvFile) {
+      setSubmitError(true);
+      setSuccessMessage("Vui lòng tải lên CV của bạn");
       setTimeout(() => setSubmitError(false), 5000);
       return;
     }
@@ -276,19 +396,127 @@ function CreatePost() {
     // Thêm validate riêng theo loại bài đăng
     if (postType === "hiring" && !formData.company) {
       setSubmitError(true);
+      setSuccessMessage("Vui lòng nhập tên công ty");
       setTimeout(() => setSubmitError(false), 5000);
       return;
     }
 
-    // Submit form (would be an API call in a real app)
-    console.log(`Creating ${postType} post:`, formData);
+    try {
+      setIsSubmitting(true);
 
-    // Show success message
-    setSubmitSuccess(true);
-    setTimeout(() => {
-      setSubmitSuccess(false);
-      navigate("/dashboard"); // Redirect to dashboard after successful submit
-    }, 3000);
+      // Chuẩn bị dữ liệu gửi lên API
+      const jobData = {
+        ...formData,
+        postType: postType, // "hiring" hoặc "seeking"
+        status: "active", // Trạng thái mặc định là active
+
+        // Chuyển đổi định dạng ngày tháng (nếu có)
+        deadline: formData.deadline
+          ? formData.deadline.toISOString()
+          : undefined,
+
+        // Đảm bảo các trường bắt buộc cho mô hình Job
+        title: formData.title.trim(),
+        company:
+          postType === "hiring" ? formData.company.trim() : "Cá nhân tìm việc",
+        location: formData.location.trim(),
+        category: formData.category,
+        type: formData.type,
+        description: formData.description.trim(),
+
+        // Các trường tùy chọn
+        experience: formData.experience,
+
+        // Mức lương: sử dụng khoảng lương từ salaryRange
+        salary: `${formData.salaryRange[0]}-${formData.salaryRange[1]} triệu`,
+        salaryMin: formData.salaryRange[0],
+        salaryMax: formData.salaryRange[1],
+
+        // Thêm thông tin tùy thuộc vào loại bài đăng
+        industry:
+          postType === "hiring"
+            ? formData.industry || "Công nghệ thông tin"
+            : undefined,
+        companySize:
+          postType === "hiring"
+            ? formData.companySize || "Không xác định"
+            : undefined,
+        website: postType === "hiring" ? formData.website || "" : undefined,
+
+        // Thêm các trường mặc định
+        applicants: 0,
+        views: 0,
+
+        // Sắp xếp lại mảng requirements để đảm bảo tính nhất quán
+        requirements: Array.isArray(formData.requirements)
+          ? formData.requirements.filter(Boolean)
+          : [],
+
+        // Sắp xếp lại mảng benefits để đảm bảo tính nhất quán
+        benefits: Array.isArray(formData.benefits)
+          ? formData.benefits.filter(Boolean)
+          : [],
+      };
+
+      // Nếu có CV file, thêm vào formData để gửi
+      let formDataToSend;
+
+      if (postType === "seeking" && cvFile) {
+        // Sử dụng FormData khi có file cần gửi
+        const formDataWithFile = new FormData();
+
+        // Thêm tất cả dữ liệu job
+        Object.keys(jobData).forEach((key) => {
+          if (key === "requirements" || key === "benefits") {
+            // Chuyển đổi mảng thành chuỗi JSON
+            formDataWithFile.append(key, JSON.stringify(jobData[key]));
+          } else if (jobData[key] !== undefined && jobData[key] !== null) {
+            formDataWithFile.append(key, jobData[key]);
+          }
+        });
+
+        // Thêm file CV
+        formDataWithFile.append("cv", cvFile);
+        formDataWithFile.append("cvFileName", cvFileName);
+
+        formDataToSend = formDataWithFile;
+      } else {
+        formDataToSend = jobData;
+      }
+
+      // Gọi API tạo công việc với config phù hợp
+      const response = await createJob(
+        formDataToSend,
+        postType === "seeking" && cvFile
+      );
+
+      if (response.success) {
+        // Hiển thị thông báo thành công
+        setSubmitSuccess(true);
+        setSuccessMessage(
+          "Đăng bài thành công! Bạn sẽ được chuyển hướng sau giây lát."
+        );
+
+        // Chuyển hướng sau khi đăng thành công
+        setTimeout(() => {
+          setSubmitSuccess(false);
+          navigate("/dashboard"); // Redirect to dashboard after successful submit
+        }, 3000);
+      } else {
+        // Hiển thị thông báo lỗi từ API
+        setSubmitError(true);
+        setSuccessMessage(response.message || "Đã xảy ra lỗi khi đăng bài");
+        setTimeout(() => setSubmitError(false), 5000);
+      }
+    } catch (error) {
+      console.error("Lỗi khi đăng bài:", error);
+      // Hiển thị thông báo lỗi
+      setSubmitError(true);
+      setSuccessMessage(error.message || "Đã xảy ra lỗi khi đăng bài");
+      setTimeout(() => setSubmitError(false), 5000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -653,26 +881,68 @@ function CreatePost() {
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        id="salary"
-                        name="salary"
-                        label={
-                          postType === "hiring"
-                            ? "Mức lương đề xuất"
-                            : "Mức lương mong muốn"
-                        }
-                        value={formData.salary}
-                        onChange={handleInputChange}
-                        placeholder="Ví dụ: 15-25 triệu, Thỏa thuận, ..."
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <AttachMoneyOutlinedIcon color="primary" />
-                            </InputAdornment>
-                          ),
-                        }}
-                      />
+                      <Box sx={{ width: "100%" }}>
+                        <Typography
+                          variant="subtitle1"
+                          gutterBottom
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            mb: 2,
+                            color: "rgba(0, 0, 0, 0.6)",
+                          }}
+                        >
+                          <AttachMoneyOutlinedIcon
+                            color="primary"
+                            sx={{ mr: 1 }}
+                          />
+                          {postType === "hiring"
+                            ? "Mức lương đề xuất (triệu đồng)"
+                            : "Mức lương mong muốn (triệu đồng)"}
+                        </Typography>
+
+                        <Box sx={{ px: 2, pt: 1, pb: 2 }}>
+                          <Slider
+                            value={formData.salaryRange}
+                            onChange={handleSalaryRangeChange}
+                            valueLabelDisplay="on"
+                            valueLabelFormat={valueLabelFormat}
+                            min={0}
+                            max={100}
+                            step={1}
+                            marks={[
+                              { value: 0, label: "0" },
+                              { value: 20, label: "20" },
+                              { value: 40, label: "40" },
+                              { value: 60, label: "60" },
+                              { value: 80, label: "80" },
+                              { value: 100, label: "100+" },
+                            ]}
+                            sx={{
+                              color: theme.palette.primary.main,
+                              "& .MuiSlider-valueLabel": {
+                                backgroundColor: theme.palette.primary.main,
+                              },
+                              "& .MuiSlider-markLabel": {
+                                fontSize: "0.75rem",
+                                color: "text.secondary",
+                              },
+                            }}
+                          />
+                        </Box>
+
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          align="center"
+                        >
+                          Mức lương:{" "}
+                          <strong>
+                            {formData.salaryRange[0]} -{" "}
+                            {formData.salaryRange[1]} triệu
+                          </strong>
+                        </Typography>
+                      </Box>
                     </Grid>
 
                     <Grid item xs={12} sm={6}>
@@ -821,6 +1091,222 @@ function CreatePost() {
                         </Typography>
                       </Paper>
                     </Grid>
+
+                    {/* Phần upload CV - Chỉ hiển thị khi loại bài đăng là "seeking" (tìm việc) */}
+                    {postType === "seeking" && (
+                      <Grid item xs={12}>
+                        <Typography
+                          variant="h6"
+                          fontWeight={600}
+                          sx={{ mt: 3, mb: 2 }}
+                        >
+                          Upload CV
+                        </Typography>
+
+                        <Box
+                          sx={{
+                            border: "1px dashed",
+                            borderColor: cvError
+                              ? "error.main"
+                              : "primary.main",
+                            borderRadius: 2,
+                            p: { xs: 2, md: 4 },
+                            textAlign: "center",
+                            backgroundColor: "rgba(25, 118, 210, 0.04)",
+                            transition: "all 0.3s ease",
+                            "&:hover": {
+                              backgroundColor: "rgba(25, 118, 210, 0.08)",
+                              cursor: "pointer",
+                              boxShadow: "0 0 8px rgba(25, 118, 210, 0.2)",
+                            },
+                            position: "relative",
+                            mb: 2,
+                            minHeight: "160px",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
+                          component="label"
+                        >
+                          <input
+                            type="file"
+                            accept=".pdf,.doc,.docx"
+                            style={{ display: "none" }}
+                            onChange={handleCvUpload}
+                          />
+
+                          {cvFile ? (
+                            <Box
+                              sx={{
+                                width: "100%",
+                                maxWidth: "400px",
+                                mx: "auto",
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  mb: 2,
+                                  backgroundColor: "rgba(25, 118, 210, 0.08)",
+                                  borderRadius: "50%",
+                                  width: "60px",
+                                  height: "60px",
+                                  mx: "auto",
+                                }}
+                              >
+                                <InsertDriveFileIcon
+                                  color="primary"
+                                  sx={{ fontSize: 36 }}
+                                />
+                              </Box>
+                              <Typography
+                                variant="subtitle1"
+                                color="primary.main"
+                                fontWeight="medium"
+                                gutterBottom
+                              >
+                                {cvFileName}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ mt: 1 }}
+                              >
+                                Nhấp để thay đổi file CV
+                              </Typography>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                sx={{
+                                  position: "absolute",
+                                  top: 16,
+                                  right: 16,
+                                  backgroundColor: "rgba(255,255,255,0.8)",
+                                  boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+                                  "&:hover": {
+                                    backgroundColor: "rgba(255,255,255,0.95)",
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                                  },
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveCv();
+                                }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Box>
+                          ) : (
+                            <Box
+                              sx={{
+                                py: { xs: 1, md: 2 },
+                                maxWidth: "400px",
+                                mx: "auto",
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "center",
+                                  mb: 2,
+                                  backgroundColor: "rgba(25, 118, 210, 0.08)",
+                                  borderRadius: "50%",
+                                  width: "70px",
+                                  height: "70px",
+                                  mx: "auto",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <CloudUploadIcon
+                                  color="primary"
+                                  sx={{ fontSize: 40 }}
+                                />
+                              </Box>
+                              <Typography
+                                variant="subtitle1"
+                                color="primary.main"
+                                fontWeight="medium"
+                                gutterBottom
+                              >
+                                Tải lên CV của bạn
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ mt: 1 }}
+                              >
+                                Kéo thả file vào đây hoặc nhấp để chọn
+                              </Typography>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: 1,
+                                  mt: 2,
+                                  p: 1,
+                                  borderRadius: 1,
+                                  backgroundColor: "rgba(25, 118, 210, 0.04)",
+                                }}
+                              >
+                                <AttachFileIcon
+                                  color="action"
+                                  sx={{ fontSize: 16 }}
+                                />
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  Định dạng: PDF, DOC, DOCX (tối đa 5MB)
+                                </Typography>
+                              </Box>
+                            </Box>
+                          )}
+                        </Box>
+
+                        {cvError && (
+                          <Typography
+                            color="error"
+                            variant="body2"
+                            sx={{
+                              mt: 1,
+                              mb: 2,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <CloseIcon fontSize="small" />
+                            {cvError}
+                          </Typography>
+                        )}
+
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 2,
+                            backgroundColor: "rgba(25, 118, 210, 0.05)",
+                            borderRadius: 2,
+                            display: "flex",
+                            alignItems: "flex-start",
+                          }}
+                        >
+                          <HelpOutlineIcon
+                            color="primary"
+                            sx={{ mr: 1, mt: 0.3 }}
+                          />
+                          <Typography variant="body2" color="text.secondary">
+                            Tải lên CV của bạn để nhà tuyển dụng có thể đánh giá
+                            kỹ năng và kinh nghiệm của bạn chi tiết hơn. CV rõ
+                            ràng, chuyên nghiệp sẽ tăng cơ hội được mời phỏng
+                            vấn.
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                    )}
                   </Grid>
 
                   <Box
@@ -987,6 +1473,126 @@ function CreatePost() {
                       </Paper>
                     </Grid>
 
+                    {postType === "hiring" && (
+                      <Grid item xs={12}>
+                        <Typography
+                          variant="h5"
+                          fontWeight={600}
+                          sx={{ mt: 3, mb: 2 }}
+                        >
+                          Quyền lợi
+                        </Typography>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 2,
+                            mb: 2,
+                            flexDirection: isMobile ? "column" : "row",
+                          }}
+                        >
+                          <TextField
+                            fullWidth
+                            id="benefit-input"
+                            value={benefitInput}
+                            onChange={(e) => setBenefitInput(e.target.value)}
+                            label="Thêm quyền lợi"
+                            placeholder="Nhập quyền lợi và nhấn thêm"
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                addBenefit();
+                              }
+                            }}
+                          />
+                          <Button
+                            variant="contained"
+                            color="success"
+                            onClick={addBenefit}
+                            sx={{
+                              px: 3,
+                              height: isMobile ? "auto" : "56px",
+                              mt: isMobile ? 1 : 0,
+                              minWidth: isMobile ? "100%" : "120px",
+                            }}
+                            startIcon={<AddIcon />}
+                          >
+                            Thêm
+                          </Button>
+                        </Box>
+
+                        <Paper
+                          variant="outlined"
+                          sx={{
+                            mt: 2,
+                            p: 3,
+                            borderRadius: 2,
+                            minHeight: "150px",
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 1,
+                            alignContent:
+                              formData.benefits.length > 0
+                                ? "flex-start"
+                                : "center",
+                            justifyContent:
+                              formData.benefits.length > 0
+                                ? "flex-start"
+                                : "center",
+                            backgroundColor: theme.palette.background.default,
+                            transition: "all 0.3s ease",
+                          }}
+                        >
+                          {formData.benefits.length > 0 ? (
+                            formData.benefits.map((benefit, index) => (
+                              <Chip
+                                key={index}
+                                label={benefit}
+                                onDelete={() => removeBenefit(index)}
+                                color="success"
+                                variant="outlined"
+                                sx={{
+                                  m: 0.5,
+                                  borderRadius: "8px",
+                                  py: 0.5,
+                                  px: 0.5,
+                                  transition: "all 0.2s ease",
+                                  "&:hover": {
+                                    backgroundColor: "rgba(76, 175, 80, 0.08)",
+                                  },
+                                }}
+                              />
+                            ))
+                          ) : (
+                            <Typography color="text.secondary" align="center">
+                              Chưa có quyền lợi nào được thêm
+                            </Typography>
+                          )}
+                        </Paper>
+
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            mt: 2,
+                            p: 2,
+                            backgroundColor: "rgba(76, 175, 80, 0.05)",
+                            borderRadius: 2,
+                            display: "flex",
+                            alignItems: "flex-start",
+                          }}
+                        >
+                          <HelpOutlineIcon
+                            color="success"
+                            sx={{ mr: 1, mt: 0.3 }}
+                          />
+                          <Typography variant="body2" color="text.secondary">
+                            Thêm các quyền lợi mà ứng viên sẽ được hưởng khi làm
+                            việc tại công ty của bạn. Điều này giúp thu hút ứng
+                            viên tiềm năng.
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                    )}
+
                     {submitSuccess && (
                       <Grid item xs={12}>
                         <Alert
@@ -998,8 +1604,7 @@ function CreatePost() {
                           }}
                           icon={<CheckCircleOutlineIcon fontSize="inherit" />}
                         >
-                          Đăng bài thành công! Bạn sẽ được chuyển hướng sau giây
-                          lát.
+                          {successMessage}
                         </Alert>
                       </Grid>
                     )}
@@ -1010,7 +1615,7 @@ function CreatePost() {
                           severity="error"
                           sx={{ mb: 2, borderRadius: 2, py: 1.5 }}
                         >
-                          Vui lòng điền đầy đủ các trường bắt buộc.
+                          {successMessage}
                         </Alert>
                       </Grid>
                     )}
@@ -1035,6 +1640,7 @@ function CreatePost() {
                       type="submit"
                       variant="contained"
                       onClick={handleSubmit}
+                      disabled={isSubmitting}
                       sx={{
                         borderRadius: "10px",
                         px: 4,
@@ -1055,7 +1661,16 @@ function CreatePost() {
                         },
                       }}
                     >
-                      Đăng bài ngay
+                      {isSubmitting ? (
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <CircularProgress size={16} color="inherit" /> Đang xử
+                          lý...
+                        </Box>
+                      ) : (
+                        "Đăng bài ngay"
+                      )}
                     </Button>
                   </Box>
                 </motion.div>

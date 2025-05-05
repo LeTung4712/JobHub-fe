@@ -120,8 +120,8 @@ function Register() {
 
         console.log("Đăng ký thành công:", result);
 
-        // Chuyển hướng đến trang chủ
-        navigate("/");
+        // Chuyển hướng đến trang profile
+        navigate("/profile");
       } else {
         setError("Đăng ký không thành công. Vui lòng thử lại.");
       }

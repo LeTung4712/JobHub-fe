@@ -71,50 +71,59 @@ function Jobs() {
   // Gọi API khi component mount hoặc khi bộ lọc thay đổi
   useEffect(() => {
     fetchJobs();
-  }, [page, limit, filterCategory, postType, salaryRange, postDate]);
+  }, [page, limit]);
+
+  // Kích hoạt tìm kiếm khi các bộ lọc thay đổi (có delay để tránh gọi API quá nhiều)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (page === 1) {
+        // Nếu đang ở trang 1, chỉ cần gọi fetchJobs
+        fetchJobs();
+      } else {
+        // Nếu không ở trang 1, reset về trang 1 (sẽ trigger fetchJobs qua dependency)
+        setPage(1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [filterCategory, postType, salaryRange, postDate, searchQuery]);
 
   // Cập nhật số lượng bộ lọc đang kích hoạt
   useEffect(() => {
     updateActiveFiltersCount();
   }, [filterCategory, postType, salaryRange, postDate]);
 
-  // Mảng công việc mẫu để sử dụng khi không có dữ liệu từ API
-  const sampleJobs = [
-    {
-      id: 1,
-      title: "Frontend Developer",
-      company: "Công ty ABC",
-      location: "Hà Nội",
-      category: "development",
-      salary: "15-25 triệu",
-      salaryValue: 20,
-      time: "Toàn thời gian",
-      type: "hiring",
-      date: "2023-10-15",
-    },
-    {
-      id: 2,
-      title: "Backend Developer",
-      company: "Công ty XYZ",
-      location: "Hồ Chí Minh",
-      category: "development",
-      salary: "20-30 triệu",
-      salaryValue: 25,
-      time: "Toàn thời gian",
-      type: "hiring",
-      date: "2023-10-20",
-    },
-    // ... giữ lại một số mẫu để test trong trường hợp API không hoạt động
-  ];
-
   // Kiểm tra thời gian đăng
   const checkPostDate = (jobDate, filterDate) => {
     if (filterDate === "all") return true;
+    if (!jobDate) return false;
+
+    let dateToCheck;
+    if (typeof jobDate === "string") {
+      dateToCheck = new Date(jobDate);
+
+      // Nếu là ngày không hợp lệ, thử xử lý định dạng khác
+      if (isNaN(dateToCheck.getTime())) {
+        // Thử chuyển định dạng dd/mm/yyyy
+        const parts = jobDate.split("/");
+        if (parts.length === 3) {
+          dateToCheck = new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+      }
+    } else if (jobDate instanceof Date) {
+      dateToCheck = jobDate;
+    } else {
+      return false;
+    }
+
+    // Nếu vẫn không phải ngày hợp lệ, trả về false
+    if (isNaN(dateToCheck.getTime())) {
+      return false;
+    }
 
     const currentDate = new Date();
-    const postDate = new Date(jobDate);
     const diffDays = Math.floor(
-      (currentDate - postDate) / (1000 * 60 * 60 * 24)
+      (currentDate - dateToCheck) / (1000 * 60 * 60 * 24)
     );
 
     switch (filterDate) {
@@ -131,72 +140,58 @@ function Jobs() {
     }
   };
 
-  // Kiểm tra và sử dụng dữ liệu mẫu nếu không có dữ liệu từ API
-  const jobsToDisplay = jobs.length > 0 ? jobs : sampleJobs;
+  // Lấy giá trị lương từ chuỗi lương hoặc giá trị số
+  const getSalaryValue = (salary) => {
+    if (typeof salary === "number") return salary;
 
-  // Lọc việc làm khi không có dữ liệu từ API
-  const filteredJobs =
-    jobs.length > 0
-      ? jobs
-      : sampleJobs.filter((job) => {
-          // Lọc theo danh mục
-          const categoryMatch =
-            filterCategory === "all" || job.category === filterCategory;
+    if (typeof salary === "string") {
+      // Xử lý chuỗi lương: "15-25 triệu" => trả về giá trị trung bình 20
+      const matches = salary.match(/(\d+)(?:\s*-\s*(\d+))?/);
+      if (matches) {
+        if (matches[2]) {
+          // Có khoảng giá trị: lấy trung bình
+          return (parseInt(matches[1]) + parseInt(matches[2])) / 2;
+        } else if (matches[1]) {
+          // Chỉ có một giá trị
+          return parseInt(matches[1]);
+        }
+      }
+    }
 
-          // Lọc theo tìm kiếm
-          const searchMatch =
-            searchQuery === "" ||
-            job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            job.location.toLowerCase().includes(searchQuery.toLowerCase());
+    return 0; // Giá trị mặc định
+  };
 
-          // Lọc theo loại bài đăng
-          const typeMatch = postType === "all" || job.type === postType;
-
-          // Lọc theo khoảng lương
-          const salaryMatch =
-            job.salaryValue >= salaryRange[0] &&
-            job.salaryValue <= salaryRange[1];
-
-          // Lọc theo thời gian đăng
-          const dateMatch = checkPostDate(job.date, postDate);
-
-          return (
-            categoryMatch &&
-            searchMatch &&
-            typeMatch &&
-            salaryMatch &&
-            dateMatch
-          );
-        });
+  // Lọc và hiển thị danh sách công việc từ API
+  const filteredJobs = jobs;
 
   const handleCategoryChange = (event) => {
     setFilterCategory(event.target.value);
-    setPage(1); // Reset về trang đầu tiên khi thay đổi bộ lọc
+    // setPage(1) được xử lý ở useEffect
   };
 
   const handlePostTypeChange = (event) => {
     setPostType(event.target.value);
-    setPage(1); // Reset về trang đầu tiên
+    // setPage(1) được xử lý ở useEffect
   };
 
   const handleSalaryChange = (event, newValue) => {
     setSalaryRange(newValue);
+    // Không cần reset page do useEffect sẽ xử lý
   };
 
   const handlePostDateChange = (event) => {
     setPostDate(event.target.value);
-    setPage(1); // Reset về trang đầu tiên
+    // setPage(1) được xử lý ở useEffect
   };
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
+    // Không cần gọi fetchJobs, useEffect sẽ xử lý với timeout
   };
 
   const clearSearch = () => {
     setSearchQuery("");
-    setPage(1);
-    fetchJobs(); // Tải lại dữ liệu khi xóa tìm kiếm
+    // Không cần gọi fetchJobs hay reset page vì useEffect sẽ xử lý
   };
 
   const resetFilters = () => {
@@ -205,9 +200,7 @@ function Jobs() {
     setSalaryRange([0, 50]);
     setPostDate("all");
     setSearchQuery("");
-    setPage(1);
-    fetchJobs(); // Tải lại dữ liệu khi reset bộ lọc
-    updateActiveFiltersCount();
+    // Không cần gọi fetchJobs hay reset page vì useEffect sẽ xử lý
   };
 
   const toggleFilters = () => {
@@ -300,12 +293,30 @@ function Jobs() {
       const params = {
         page,
         limit,
-        search: searchQuery || undefined,
-        category: filterCategory !== "all" ? filterCategory : undefined,
-        type: postType !== "all" ? postType : undefined,
-        minSalary: salaryRange[0] || undefined,
-        maxSalary: salaryRange[1] || undefined,
       };
+
+      // Chỉ thêm các tham số nếu có giá trị
+      if (searchQuery) {
+        params.search = searchQuery;
+      }
+
+      if (filterCategory !== "all") {
+        params.category = filterCategory;
+      }
+
+      if (postType !== "all") {
+        params.type = postType;
+      }
+
+      // Chỉ gửi salaryMin khi giá trị > 0
+      if (salaryRange[0] > 0) {
+        params.minSalary = salaryRange[0];
+      }
+
+      // Chỉ gửi salaryMax khi giá trị < giá trị max
+      if (salaryRange[1] < 50) {
+        params.maxSalary = salaryRange[1];
+      }
 
       // Nếu có lọc theo ngày, thêm vào params
       if (postDate !== "all") {
@@ -322,28 +333,85 @@ function Jobs() {
           // Đảm bảo có các trường cần thiết cho UI
           id: job._id || job.id,
           category: job.category || "other",
-          type: job.type || "hiring",
-          salaryValue: job.salaryMin || job.salaryValue || 0,
+          type: job.postType || job.type || "hiring",
+          // Tính toán giá trị lương để hiển thị
+          salaryValue: getSalaryValueFromJob(job),
+          // Đảm bảo có title, company và location để hiển thị
+          title: job.title || "Không có tiêu đề",
+          company: job.company || job.author?.company || "Không xác định",
+          location: job.location || "Không xác định",
+          // Format salary string nếu có salaryMin và salaryMax
+          salary: formatSalaryDisplay(job),
         }));
 
         setJobs(processedJobs || []);
-        setTotalJobs(response.total || 0);
+        setTotalJobs(response.total || processedJobs.length || 0);
       } else {
+        console.warn("API không trả về dữ liệu thành công:", response);
+        setJobs([]);
         setError(response.message || "Không thể tải danh sách công việc");
       }
     } catch (err) {
       console.error("Lỗi khi tải danh sách công việc:", err);
+      setJobs([]);
       setError("Đã xảy ra lỗi khi tải danh sách công việc");
     } finally {
       setLoading(false);
     }
   };
 
+  // Helper để lấy giá trị lương từ job để sử dụng trong filter
+  const getSalaryValueFromJob = (job) => {
+    // Nếu đã có salaryValue (từ dữ liệu mẫu), sử dụng nó
+    if (job.salaryValue) return job.salaryValue;
+
+    // Nếu có salaryMin, sử dụng giá trị trung bình giữa salaryMin và salaryMax
+    if (job.salaryMin) {
+      const min = job.salaryMin;
+      const max = job.salaryMax || min;
+      return (min + max) / 2;
+    }
+
+    // Nếu có salary string, parse để lấy giá trị
+    if (job.salary && typeof job.salary === "string") {
+      const matches = job.salary.match(/(\d+)(?:\s*-\s*(\d+))?/);
+      if (matches) {
+        if (matches[2]) {
+          // Có khoảng giá trị: lấy trung bình
+          return (parseInt(matches[1]) + parseInt(matches[2])) / 2;
+        } else if (matches[1]) {
+          // Chỉ có một giá trị
+          return parseInt(matches[1]);
+        }
+      }
+    }
+
+    return 0; // Giá trị mặc định
+  };
+
+  // Helper để format hiển thị mức lương
+  const formatSalaryDisplay = (job) => {
+    if (job.salary) return job.salary;
+
+    if (job.salaryMin && job.salaryMax) {
+      return `${job.salaryMin}-${job.salaryMax} triệu`;
+    }
+
+    if (job.salaryMin) {
+      return `Từ ${job.salaryMin} triệu`;
+    }
+
+    if (job.salaryMax) {
+      return `Đến ${job.salaryMax} triệu`;
+    }
+
+    return "Thỏa thuận";
+  };
+
   // Gọi API khi submit form tìm kiếm
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    setPage(1); // Reset về trang đầu tiên
-    fetchJobs();
+    // Chỉ cần ngăn form submit, mọi thứ được xử lý bởi useEffect
   };
 
   return (
@@ -1137,7 +1205,9 @@ function Jobs() {
                         },
                       }}
                     >
-                      {job.type === "seeking" ? "Xem hồ sơ" : "Ứng tuyển ngay"}
+                      {job.postType === "seeking"
+                        ? "Xem hồ sơ"
+                        : "Ứng tuyển ngay"}
                     </Button>
                   </CardActions>
                 </Card>
@@ -1152,10 +1222,31 @@ function Jobs() {
               p: 3,
               borderRadius: 2,
               fontSize: "1rem",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
             }}
           >
-            Không tìm thấy việc làm phù hợp với tiêu chí tìm kiếm. Hãy thử lại
-            với bộ lọc hoặc từ khóa khác.
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{ fontWeight: "bold", mt: 1 }}
+            >
+              Không tìm thấy công việc
+            </Typography>
+            <Typography sx={{ mb: 2 }}>
+              Không tìm thấy việc làm phù hợp với tiêu chí tìm kiếm của bạn.
+            </Typography>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={resetFilters}
+              startIcon={<ClearIcon />}
+              sx={{ mt: 1 }}
+            >
+              Xóa bộ lọc
+            </Button>
           </Alert>
         )}
       </Container>

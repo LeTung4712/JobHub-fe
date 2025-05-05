@@ -457,6 +457,135 @@ function Dashboard() {
             </Card>
           </Grid>
 
+          {/* Activity Chart - Thêm biểu đồ hoạt động */}
+          <Grid item xs={12} md={8}>
+            <Paper
+              elevation={3}
+              sx={{
+                borderRadius: { xs: 2, md: 3 },
+                p: { xs: 2, md: 3 },
+                background: "white",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+                transition: "transform 0.2s",
+                "&:hover": {
+                  transform: "translateY(-5px)",
+                  boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mb: 3,
+                }}
+              >
+                <Typography variant="h5" fontWeight={600}>
+                  Hoạt động gần đây
+                </Typography>
+                <Chip
+                  label="Tuần này"
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  sx={{ fontWeight: 600 }}
+                />
+              </Box>
+
+              <ActivityChart />
+
+              <Box
+                sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Tổng tương tác: {stats.profileViews} lượt
+                </Typography>
+                <Button
+                  variant="text"
+                  size="small"
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 500,
+                  }}
+                >
+                  Xem chi tiết
+                </Button>
+              </Box>
+            </Paper>
+          </Grid>
+
+          {/* Quick Action - Thêm khu vực hành động nhanh */}
+          <Grid item xs={12} md={4}>
+            <Paper
+              elevation={3}
+              sx={{
+                borderRadius: { xs: 2, md: 3 },
+                p: { xs: 2, md: 3 },
+                background: "white",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+                transition: "transform 0.2s",
+                height: "100%",
+                "&:hover": {
+                  transform: "translateY(-5px)",
+                  boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
+                },
+              }}
+            >
+              <Typography variant="h5" fontWeight={600} sx={{ mb: 3 }}>
+                Hành động nhanh
+              </Typography>
+
+              <Stack spacing={2}>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  startIcon={<AddIcon />}
+                  sx={{
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    py: 1.5,
+                    bgcolor: "primary.main",
+                  }}
+                  onClick={() => navigate("/posts/create")}
+                >
+                  Đăng tin tuyển dụng mới
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<WorkIcon />}
+                  sx={{
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    py: 1.5,
+                  }}
+                  onClick={() => navigate("/jobs")}
+                >
+                  Tìm kiếm việc làm
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<MessageIcon />}
+                  sx={{
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    py: 1.5,
+                  }}
+                  onClick={() => navigate("/messages")}
+                >
+                  Kiểm tra tin nhắn
+                </Button>
+              </Stack>
+            </Paper>
+          </Grid>
+
           {/* Recent Jobs - Đặt bên trái với tỷ lệ md=6 */}
           <Grid item xs={12} md={6}>
             <Paper
@@ -540,7 +669,11 @@ function Dashboard() {
                             {job.company.charAt(0)}
                           </Avatar>
                           <Box sx={{ display: { xs: "block", sm: "none" } }}>
-                            <Typography variant="body1" fontWeight={600}>
+                            <Typography
+                              variant="body1"
+                              fontWeight={600}
+                              sx={{ wordBreak: "break-word" }}
+                            >
                               {job.title}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
@@ -552,7 +685,11 @@ function Dashboard() {
                       <ListItemText
                         sx={{ display: { xs: "none", sm: "block" } }}
                         primary={
-                          <Typography variant="body1" fontWeight={600}>
+                          <Typography
+                            variant="body1"
+                            fontWeight={600}
+                            sx={{ wordBreak: "break-word" }}
+                          >
                             {job.title}
                           </Typography>
                         }
@@ -793,135 +930,6 @@ function Dashboard() {
                   </Typography>
                 </Box>
               )}
-            </Paper>
-          </Grid>
-
-          {/* Activity Chart - Thêm biểu đồ hoạt động */}
-          <Grid item xs={12} md={8}>
-            <Paper
-              elevation={3}
-              sx={{
-                borderRadius: { xs: 2, md: 3 },
-                p: { xs: 2, md: 3 },
-                background: "white",
-                boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
-                transition: "transform 0.2s",
-                "&:hover": {
-                  transform: "translateY(-5px)",
-                  boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
-                },
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 3,
-                }}
-              >
-                <Typography variant="h5" fontWeight={600}>
-                  Hoạt động gần đây
-                </Typography>
-                <Chip
-                  label="Tuần này"
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                  sx={{ fontWeight: 600 }}
-                />
-              </Box>
-
-              <ActivityChart />
-
-              <Box
-                sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  Tổng tương tác: {stats.profileViews} lượt
-                </Typography>
-                <Button
-                  variant="text"
-                  size="small"
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 500,
-                  }}
-                >
-                  Xem chi tiết
-                </Button>
-              </Box>
-            </Paper>
-          </Grid>
-
-          {/* Quick Action - Thêm khu vực hành động nhanh */}
-          <Grid item xs={12} md={4}>
-            <Paper
-              elevation={3}
-              sx={{
-                borderRadius: { xs: 2, md: 3 },
-                p: { xs: 2, md: 3 },
-                background: "white",
-                boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
-                transition: "transform 0.2s",
-                height: "100%",
-                "&:hover": {
-                  transform: "translateY(-5px)",
-                  boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
-                },
-              }}
-            >
-              <Typography variant="h5" fontWeight={600} sx={{ mb: 3 }}>
-                Hành động nhanh
-              </Typography>
-
-              <Stack spacing={2}>
-                <Button
-                  variant="contained"
-                  fullWidth
-                  startIcon={<AddIcon />}
-                  sx={{
-                    borderRadius: "8px",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    py: 1.5,
-                    bgcolor: "primary.main",
-                  }}
-                  onClick={() => navigate("/posts/create")}
-                >
-                  Đăng tin tuyển dụng mới
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  startIcon={<WorkIcon />}
-                  sx={{
-                    borderRadius: "8px",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    py: 1.5,
-                  }}
-                  onClick={() => navigate("/jobs")}
-                >
-                  Tìm kiếm việc làm
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  fullWidth
-                  startIcon={<MessageIcon />}
-                  sx={{
-                    borderRadius: "8px",
-                    textTransform: "none",
-                    fontWeight: 600,
-                    py: 1.5,
-                  }}
-                  onClick={() => navigate("/messages")}
-                >
-                  Kiểm tra tin nhắn
-                </Button>
-              </Stack>
             </Paper>
           </Grid>
         </Grid>

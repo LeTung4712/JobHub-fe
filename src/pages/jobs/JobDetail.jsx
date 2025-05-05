@@ -118,30 +118,6 @@ const JobDetail = () => {
     recruiterEmail: "hr@techsolutions.vn",
   };
 
-  // Danh sách việc làm tương tự (mẫu)
-  const similarJobs = [
-    {
-      id: "job-1",
-      title: "Frontend Developer",
-      company: "Global Tech",
-      location: "Hà Nội",
-      companyLogo: "https://randomuser.me/api/portraits/men/2.jpg",
-    },
-    {
-      id: "job-2",
-      title: "React Developer",
-      company: "Fintech Solutions",
-      location: "Hồ Chí Minh",
-      companyLogo: "https://randomuser.me/api/portraits/men/3.jpg",
-    },
-    {
-      id: "job-3",
-      title: "UI/UX Designer",
-      company: "Creative Studio",
-      location: "Đà Nẵng",
-      companyLogo: "https://randomuser.me/api/portraits/men/4.jpg",
-    },
-  ];
 
   // Các bước trong tiến trình ứng tuyển
   const steps = ["Thông tin chi tiết"];
@@ -572,102 +548,6 @@ const JobDetail = () => {
                   </Grid>
                 </Paper>
 
-                {/* Việc làm tương tự */}
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: { xs: 2, sm: 3 },
-                    border: "1px solid rgba(0, 0, 0, 0.1)",
-                    borderRadius: 2,
-                  }}
-                >
-                  <Typography variant="h6" fontWeight="bold" gutterBottom>
-                    Việc làm tương tự
-                  </Typography>
-
-                  <List
-                    disablePadding
-                    sx={{
-                      display: { xs: "flex", md: "block" },
-                      flexDirection: { xs: "row", sm: "row", md: "column" },
-                      flexWrap: "nowrap",
-                      overflowX: { xs: "auto", md: "visible" },
-                      pb: { xs: 1, md: 0 },
-                      mx: { xs: -1, md: 0 },
-                      "&::-webkit-scrollbar": {
-                        height: "4px",
-                      },
-                      "&::-webkit-scrollbar-thumb": {
-                        backgroundColor: "rgba(0,0,0,0.2)",
-                        borderRadius: "4px",
-                      },
-                    }}
-                  >
-                    {similarJobs.map((job, index) => (
-                      <React.Fragment key={job.id}>
-                        <ListItem
-                          button
-                          disableGutters
-                          onClick={() => navigate(`/jobs/${job.id}`)}
-                          sx={{
-                            px: { xs: 1, md: 0 },
-                            minWidth: { xs: "200px", sm: "250px", md: "100%" },
-                            flexShrink: 0,
-                          }}
-                        >
-                          <ListItemAvatar>
-                            <Avatar src={job.companyLogo} alt={job.company} />
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={job.title}
-                            primaryTypographyProps={{
-                              noWrap: { xs: true, md: false },
-                              variant: "body2",
-                              fontWeight: "medium",
-                            }}
-                            secondary={
-                              <React.Fragment>
-                                <Typography
-                                  variant="body2"
-                                  component="span"
-                                  noWrap
-                                  sx={{ display: "block" }}
-                                >
-                                  {job.company}
-                                </Typography>
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    mt: 0.5,
-                                  }}
-                                >
-                                  <LocationOnIcon
-                                    fontSize="small"
-                                    sx={{ mr: 0.5, fontSize: 16 }}
-                                  />
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    noWrap
-                                  >
-                                    {job.location}
-                                  </Typography>
-                                </Box>
-                              </React.Fragment>
-                            }
-                          />
-                        </ListItem>
-                        {index < similarJobs.length - 1 && (
-                          <Divider
-                            component="li"
-                            sx={{ display: { xs: "none", md: "block" } }}
-                          />
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </List>
-                </Paper>
               </Grid>
             </Grid>
           </Box>

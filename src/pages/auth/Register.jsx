@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Container,
   Box,
@@ -31,6 +31,8 @@ import HowToRegIcon from "@mui/icons-material/HowToReg";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import { register } from "../../api/auth";
+import { useAuth } from "../../App";
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -42,9 +44,18 @@ function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const { login, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -76,14 +87,50 @@ function Register() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Kiểm tra mật khẩu xác nhận
     if (formData.password !== formData.confirmPassword) {
       setPasswordError(true);
+      setError("Mật khẩu xác nhận không khớp");
       return;
     }
-    // Xử lý đăng ký ở đây
-    console.log("Đăng ký với:", formData);
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Chuẩn bị dữ liệu gửi đi
+      const userData = {
+        fullName: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+      };
+
+      // Gọi API đăng ký
+      const result = await register(userData);
+
+      if (result.success) {
+        // Đăng ký thành công và token đã được lưu trong localStorage bởi API register
+        // Cập nhật trạng thái đăng nhập trong AuthContext
+        login({
+          isAuthenticated: true,
+        });
+
+        console.log("Đăng ký thành công:", result);
+
+        // Chuyển hướng đến trang chủ
+        navigate("/");
+      } else {
+        setError("Đăng ký không thành công. Vui lòng thử lại.");
+      }
+    } catch (err) {
+      console.error("Lỗi khi đăng ký:", err);
+      setError(err.error || "Đăng ký không thành công. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -262,6 +309,12 @@ function Register() {
                   </Box>
 
                   <Box component="form" onSubmit={handleSubmit} noValidate>
+                    {error && (
+                      <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+                        {error}
+                      </Alert>
+                    )}
+
                     <TextField
                       margin="normal"
                       required
@@ -269,23 +322,18 @@ function Register() {
                       id="fullName"
                       label="Họ và tên"
                       name="fullName"
-                      autoComplete="name"
-                      autoFocus
                       value={formData.fullName}
                       onChange={handleChange}
                       variant="outlined"
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <PersonOutlineIcon
-                              color="primary"
-                              fontSize="medium"
-                            />
+                            <PersonOutlineIcon color="primary" />
                           </InputAdornment>
                         ),
                         sx: {
                           borderRadius: 2,
-                          height: 52,
+                          height: 56,
                           "&.MuiOutlinedInput-root": {
                             "&:hover fieldset": {
                               borderColor: theme.palette.primary.main,
@@ -300,9 +348,6 @@ function Register() {
                         mb: 2,
                         "& .MuiInputLabel-root": {
                           fontSize: "0.95rem",
-                        },
-                        "& .MuiInputBase-input": {
-                          fontSize: "1rem",
                         },
                       }}
                     />
@@ -314,22 +359,18 @@ function Register() {
                       id="email"
                       label="Email"
                       name="email"
-                      autoComplete="email"
                       value={formData.email}
                       onChange={handleChange}
                       variant="outlined"
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <MailOutlineIcon
-                              color="primary"
-                              fontSize="medium"
-                            />
+                            <MailOutlineIcon color="primary" />
                           </InputAdornment>
                         ),
                         sx: {
                           borderRadius: 2,
-                          height: 52,
+                          height: 56,
                           "&.MuiOutlinedInput-root": {
                             "&:hover fieldset": {
                               borderColor: theme.palette.primary.main,
@@ -344,9 +385,6 @@ function Register() {
                         mb: 2,
                         "& .MuiInputLabel-root": {
                           fontSize: "0.95rem",
-                        },
-                        "& .MuiInputBase-input": {
-                          fontSize: "1rem",
                         },
                       }}
                     />
@@ -359,17 +397,13 @@ function Register() {
                       label="Mật khẩu"
                       type={showPassword ? "text" : "password"}
                       id="password"
-                      autoComplete="new-password"
                       value={formData.password}
                       onChange={handleChange}
                       variant="outlined"
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <LockOutlinedIcon
-                              color="primary"
-                              fontSize="medium"
-                            />
+                            <LockOutlinedIcon color="primary" />
                           </InputAdornment>
                         ),
                         endAdornment: (
@@ -380,19 +414,18 @@ function Register() {
                                 handleClickShowPassword("password")
                               }
                               edge="end"
-                              size="medium"
                             >
                               {showPassword ? (
-                                <VisibilityOffIcon fontSize="small" />
+                                <VisibilityOffIcon />
                               ) : (
-                                <VisibilityIcon fontSize="small" />
+                                <VisibilityIcon />
                               )}
                             </IconButton>
                           </InputAdornment>
                         ),
                         sx: {
                           borderRadius: 2,
-                          height: 52,
+                          height: 56,
                           "&.MuiOutlinedInput-root": {
                             "&:hover fieldset": {
                               borderColor: theme.palette.primary.main,
@@ -408,9 +441,6 @@ function Register() {
                         "& .MuiInputLabel-root": {
                           fontSize: "0.95rem",
                         },
-                        "& .MuiInputBase-input": {
-                          fontSize: "1rem",
-                        },
                       }}
                     />
 
@@ -422,44 +452,39 @@ function Register() {
                       label="Xác nhận mật khẩu"
                       type={showConfirmPassword ? "text" : "password"}
                       id="confirmPassword"
-                      autoComplete="new-password"
                       value={formData.confirmPassword}
                       onChange={handleChange}
                       error={passwordError}
                       helperText={
-                        passwordError
-                          ? "Mật khẩu xác nhận không khớp với mật khẩu đã nhập"
-                          : ""
+                        passwordError ? "Mật khẩu xác nhận không khớp" : ""
                       }
                       variant="outlined"
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
-                            <LockOutlinedIcon
-                              color={passwordError ? "error" : "primary"}
-                              fontSize="medium"
-                            />
+                            <LockOutlinedIcon color="primary" />
                           </InputAdornment>
                         ),
                         endAdornment: (
                           <InputAdornment position="end">
                             <IconButton
                               aria-label="toggle confirm password visibility"
-                              onClick={() => handleClickShowPassword("confirm")}
+                              onClick={() =>
+                                handleClickShowPassword("confirmPassword")
+                              }
                               edge="end"
-                              size="medium"
                             >
                               {showConfirmPassword ? (
-                                <VisibilityOffIcon fontSize="small" />
+                                <VisibilityOffIcon />
                               ) : (
-                                <VisibilityIcon fontSize="small" />
+                                <VisibilityIcon />
                               )}
                             </IconButton>
                           </InputAdornment>
                         ),
                         sx: {
                           borderRadius: 2,
-                          height: 52,
+                          height: 56,
                           "&.MuiOutlinedInput-root": {
                             "&:hover fieldset": {
                               borderColor: theme.palette.primary.main,
@@ -471,54 +496,24 @@ function Register() {
                         },
                       }}
                       sx={{
-                        mb: 1.5,
+                        mb: 3,
                         "& .MuiInputLabel-root": {
                           fontSize: "0.95rem",
                         },
-                        "& .MuiInputBase-input": {
-                          fontSize: "1rem",
-                        },
-                        "& .MuiFormHelperText-root": {
-                          marginTop: "2px",
-                          fontSize: "0.75rem",
-                        },
                       }}
                     />
-
-                    {passwordError && (
-                      <Alert
-                        severity="error"
-                        sx={{
-                          mb: 2,
-                          py: 0.8,
-                          borderRadius: 2,
-                          "& .MuiAlert-message": {
-                            fontWeight: 500,
-                            fontSize: "0.85rem",
-                          },
-                          "& .MuiAlert-icon": {
-                            color: theme.palette.error.main,
-                            opacity: 0.8,
-                            fontSize: "1.2rem",
-                            marginRight: 1,
-                          },
-                        }}
-                      >
-                        Mật khẩu xác nhận không khớp với mật khẩu đã nhập!
-                      </Alert>
-                    )}
 
                     <Button
                       type="submit"
                       fullWidth
                       variant="contained"
                       size="large"
+                      disabled={loading || passwordError}
                       sx={{
-                        py: 1.5,
-                        mt: 1,
+                        py: 1.8,
                         borderRadius: 2,
                         fontWeight: 700,
-                        fontSize: "1.1rem",
+                        fontSize: "1rem",
                         textTransform: "none",
                         boxShadow: `0 8px 20px ${theme.palette.primary.main}40`,
                         background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
@@ -530,7 +525,7 @@ function Register() {
                         },
                       }}
                     >
-                      Đăng ký
+                      {loading ? "Đang xử lý..." : "Đăng ký ngay"}
                     </Button>
 
                     <Box sx={{ mt: 2.5, textAlign: "center" }}>

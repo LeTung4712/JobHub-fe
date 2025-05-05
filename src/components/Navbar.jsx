@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   AppBar,
@@ -21,6 +21,7 @@ import {
   Tooltip,
   Divider,
   Badge,
+  CircularProgress,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import WorkIcon from "@mui/icons-material/Work";
@@ -37,7 +38,7 @@ function Navbar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
-  const { user, logout, isAuthenticated } = useAuth(); // Sử dụng AuthContext
+  const { user, logout, isAuthenticated, loading } = useAuth(); // Sử dụng AuthContext
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -107,83 +108,234 @@ function Navbar() {
         JobHub
       </Typography>
       <Divider />
-      <List>
-        {navItems.map((item) => (
-          <ListItem key={item.name} disablePadding>
-            <ListItemButton
-              sx={{ textAlign: "center" }}
-              onClick={() => handleNavigation(item.path)}
-            >
-              <ListItemText primary={item.name} />
-            </ListItemButton>
-          </ListItem>
-        ))}
 
-        {isAuthenticated ? (
-          <>
-            <ListItem disablePadding>
-              <ListItemButton
-                sx={{
-                  textAlign: "center",
-                  backgroundColor: theme.palette.primary.main,
-                  color: "white",
-                  "&:hover": {
-                    backgroundColor: theme.palette.primary.dark,
-                  },
-                  margin: "8px 16px",
-                  borderRadius: 1,
-                }}
-                onClick={() => handleNavigation("/posts/create")}
-              >
-                <AddIcon sx={{ mr: 1 }} />
-                <ListItemText primary="Đăng bài mới" />
-              </ListItemButton>
-            </ListItem>
-            <Divider sx={{ my: 1 }} />
-            {userMenuItems.map((item) => (
-              <ListItem key={item.name} disablePadding>
-                <ListItemButton
-                  sx={{ textAlign: "center" }}
-                  onClick={item.action || (() => handleNavigation(item.path))}
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
+          <CircularProgress size={24} />
+        </Box>
+      ) : (
+        <List>
+          {isAuthenticated && (
+            <Box
+              sx={{
+                p: 2,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              {user?.avatar ? (
+                <Avatar
+                  alt={user.fullName}
+                  src={user.avatar}
+                  sx={{
+                    width: 60,
+                    height: 60,
+                    mb: 1,
+                    border: `2px solid ${theme.palette.primary.main}`,
+                  }}
+                />
+              ) : (
+                <Avatar
+                  sx={{
+                    width: 60,
+                    height: 60,
+                    mb: 1,
+                    bgcolor: theme.palette.secondary.main,
+                    border: `2px solid ${theme.palette.primary.main}`,
+                  }}
                 >
-                  {item.icon}
-                  <ListItemText primary={item.name} sx={{ ml: 1 }} />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </>
-        ) : (
-          <>
-            <ListItem disablePadding>
+                  {user?.fullName?.charAt(0).toUpperCase() || "U"}
+                </Avatar>
+              )}
+              <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
+                {user?.fullName || "Người dùng"}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                {user?.email || ""}
+              </Typography>
+            </Box>
+          )}
+
+          {navItems.map((item) => (
+            <ListItem key={item.name} disablePadding>
               <ListItemButton
                 sx={{ textAlign: "center" }}
-                onClick={() => handleNavigation("/login")}
+                onClick={() => handleNavigation(item.path)}
               >
-                <ListItemText primary="Đăng nhập" />
+                <ListItemText primary={item.name} />
               </ListItemButton>
             </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton
-                sx={{
-                  textAlign: "center",
-                  backgroundColor: theme.palette.primary.main,
-                  color: "white",
-                  "&:hover": {
-                    backgroundColor: theme.palette.primary.dark,
-                  },
-                  margin: "8px 16px",
-                  borderRadius: 1,
-                }}
-                onClick={() => handleNavigation("/register")}
-              >
-                <ListItemText primary="Đăng ký" />
-              </ListItemButton>
-            </ListItem>
-          </>
-        )}
-      </List>
+          ))}
+
+          {isAuthenticated ? (
+            <>
+              <ListItem disablePadding>
+                <ListItemButton
+                  sx={{
+                    textAlign: "center",
+                    backgroundColor: theme.palette.primary.main,
+                    color: "white",
+                    "&:hover": {
+                      backgroundColor: theme.palette.primary.dark,
+                    },
+                    margin: "8px 16px",
+                    borderRadius: 1,
+                  }}
+                  onClick={() => handleNavigation("/jobs/create")}
+                >
+                  <AddIcon sx={{ mr: 1 }} />
+                  <ListItemText primary="Đăng bài mới" />
+                </ListItemButton>
+              </ListItem>
+              <Divider sx={{ my: 1 }} />
+              {userMenuItems.map((item) => (
+                <ListItem key={item.name} disablePadding>
+                  <ListItemButton
+                    sx={{ textAlign: "center" }}
+                    onClick={item.action || (() => handleNavigation(item.path))}
+                  >
+                    {item.icon}
+                    <ListItemText primary={item.name} sx={{ ml: 1 }} />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </>
+          ) : (
+            <>
+              <ListItem disablePadding>
+                <ListItemButton
+                  sx={{ textAlign: "center" }}
+                  onClick={() => handleNavigation("/login")}
+                >
+                  <ListItemText primary="Đăng nhập" />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton
+                  sx={{
+                    textAlign: "center",
+                    backgroundColor: theme.palette.primary.main,
+                    color: "white",
+                    "&:hover": {
+                      backgroundColor: theme.palette.primary.dark,
+                    },
+                    margin: "8px 16px",
+                    borderRadius: 1,
+                  }}
+                  onClick={() => handleNavigation("/register")}
+                >
+                  <ListItemText primary="Đăng ký" />
+                </ListItemButton>
+              </ListItem>
+            </>
+          )}
+        </List>
+      )}
     </Box>
   );
+
+  // Render nội dung phần user avatar và menu
+  const renderUserMenu = () => {
+    if (loading) {
+      return <CircularProgress size={24} color="inherit" sx={{ mx: 2 }} />;
+    }
+
+    return (
+      <>
+        <Button
+          color="inherit"
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => handleNavigation("/jobs/create")}
+          sx={{
+            mx: 1,
+            backgroundColor: "rgba(255,255,255,0.15)",
+            "&:hover": {
+              backgroundColor: "rgba(255,255,255,0.25)",
+            },
+          }}
+        >
+          Đăng bài mới
+        </Button>
+
+        <Tooltip title="Thông báo">
+          <IconButton color="inherit" sx={{ mx: 0.5 }}>
+            <Badge badgeContent={3} color="error">
+              <NotificationsIcon />
+            </Badge>
+          </IconButton>
+        </Tooltip>
+
+        <Tooltip title="Cài đặt tài khoản">
+          <IconButton onClick={handleOpenUserMenu} sx={{ mx: 0.5, p: 0 }}>
+            {user?.avatar ? (
+              <Avatar
+                alt={user.fullName}
+                src={user.avatar}
+                sx={{
+                  width: 40,
+                  height: 40,
+                  border: "2px solid white",
+                }}
+              />
+            ) : (
+              <Avatar
+                sx={{
+                  width: 40,
+                  height: 40,
+                  bgcolor: theme.palette.secondary.main,
+                  border: "2px solid white",
+                }}
+              >
+                {user?.fullName?.charAt(0).toUpperCase() || "U"}
+              </Avatar>
+            )}
+          </IconButton>
+        </Tooltip>
+
+        <Menu
+          sx={{ mt: "45px" }}
+          id="menu-appbar"
+          anchorEl={anchorElUser}
+          anchorOrigin={{
+            vertical: "top",
+            horizontal: "right",
+          }}
+          keepMounted
+          transformOrigin={{
+            vertical: "top",
+            horizontal: "right",
+          }}
+          open={Boolean(anchorElUser)}
+          onClose={handleCloseUserMenu}
+        >
+          <Box sx={{ px: 2, py: 1, textAlign: "center" }}>
+            <Typography variant="subtitle1" fontWeight="bold">
+              {user?.fullName || "Người dùng"}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {user?.email || ""}
+            </Typography>
+          </Box>
+          <Divider />
+          {userMenuItems.map((item) => (
+            <MenuItem
+              key={item.name}
+              onClick={item.action || (() => handleNavigation(item.path))}
+              sx={{
+                py: 1,
+                gap: 1.5,
+              }}
+            >
+              {item.icon}
+              <Typography variant="body2">{item.name}</Typography>
+            </MenuItem>
+          ))}
+        </Menu>
+      </>
+    );
+  };
 
   return (
     <>
@@ -227,103 +379,7 @@ function Navbar() {
                   sx={{ flexGrow: 0, display: "flex", alignItems: "center" }}
                 >
                   {isAuthenticated ? (
-                    <>
-                      <Button
-                        color="inherit"
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={() => handleNavigation("/posts/create")}
-                        sx={{
-                          mx: 1,
-                          backgroundColor: "rgba(255,255,255,0.15)",
-                          "&:hover": {
-                            backgroundColor: "rgba(255,255,255,0.25)",
-                          },
-                        }}
-                      >
-                        Đăng bài mới
-                      </Button>
-
-                      <Tooltip title="Thông báo">
-                        <IconButton color="inherit" sx={{ mx: 0.5 }}>
-                          <Badge badgeContent={3} color="error">
-                            <NotificationsIcon />
-                          </Badge>
-                        </IconButton>
-                      </Tooltip>
-
-                      <Tooltip title="Cài đặt tài khoản">
-                        <IconButton
-                          onClick={handleOpenUserMenu}
-                          sx={{ mx: 0.5, p: 0 }}
-                        >
-                          {user.avatar ? (
-                            <Avatar
-                              alt={user.name}
-                              src={user.avatar}
-                              sx={{
-                                width: 40,
-                                height: 40,
-                                border: "2px solid white",
-                              }}
-                            />
-                          ) : (
-                            <Avatar
-                              sx={{
-                                width: 40,
-                                height: 40,
-                                bgcolor: theme.palette.secondary.main,
-                                border: "2px solid white",
-                              }}
-                            >
-                              {user.name.charAt(0).toUpperCase()}
-                            </Avatar>
-                          )}
-                        </IconButton>
-                      </Tooltip>
-
-                      <Menu
-                        sx={{ mt: "45px" }}
-                        id="menu-appbar"
-                        anchorEl={anchorElUser}
-                        anchorOrigin={{
-                          vertical: "top",
-                          horizontal: "right",
-                        }}
-                        keepMounted
-                        transformOrigin={{
-                          vertical: "top",
-                          horizontal: "right",
-                        }}
-                        open={Boolean(anchorElUser)}
-                        onClose={handleCloseUserMenu}
-                      >
-                        <Box sx={{ px: 2, py: 1, textAlign: "center" }}>
-                          <Typography variant="subtitle1" fontWeight="bold">
-                            {user.name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {user.email}
-                          </Typography>
-                        </Box>
-                        <Divider />
-                        {userMenuItems.map((item) => (
-                          <MenuItem
-                            key={item.name}
-                            onClick={
-                              item.action || (() => handleNavigation(item.path))
-                            }
-                            sx={{
-                              py: 1,
-                              gap: 1.5,
-                            }}
-                          >
-                            {item.icon}
-                            <Typography variant="body2">{item.name}</Typography>
-                          </MenuItem>
-                        ))}
-                      </Menu>
-                    </>
+                    renderUserMenu()
                   ) : (
                     <>
                       <Button
@@ -377,7 +433,7 @@ function Navbar() {
                     color="inherit"
                     variant="contained"
                     startIcon={<AddIcon />}
-                    onClick={() => handleNavigation("/posts/create")}
+                    onClick={() => handleNavigation("/jobs/create")}
                     sx={{
                       mr: 1,
                       backgroundColor: "rgba(255,255,255,0.15)",

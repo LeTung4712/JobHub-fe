@@ -14,6 +14,7 @@ import {
   Card,
   CardContent,
   useMediaQuery,
+  Alert,
 } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -23,6 +24,7 @@ import FacebookIcon from "@mui/icons-material/Facebook";
 import MailOutlineIcon from "@mui/icons-material/MailOutline";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useAuth } from "../../App"; // Import useAuth hook
+import { login as loginApi } from "../../api/auth"; // Import API login
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -35,7 +37,7 @@ function Login() {
   const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const { login, isAuthenticated } = useAuth(); // Sử dụng AuthContext
+  const { login: authLogin, isAuthenticated } = useAuth(); // Sử dụng AuthContext
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -49,41 +51,42 @@ function Login() {
     setShowPassword(!showPassword);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    // Giả lập đăng nhập
-    setTimeout(() => {
-      // Kiểm tra email và password đơn giản
-      if (formData.email && formData.password.length >= 6) {
-        // Tạo thông tin người dùng đăng nhập thành công
-        const userData = {
-          id: "user123",
-          email: formData.email,
-          name: "Người dùng", // Giả lập tên người dùng
-          role: "user", // Vai trò: user hoặc employer
-          avatar: null, // Không có avatar mặc định
+    try {
+      // Gọi API đăng nhập
+      const result = await loginApi({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (result.success) {
+        // Lấy thông tin người dùng từ API
+        // Token đã được lưu trong localStorage bởi hàm loginApi
+
+        // Cập nhật trạng thái xác thực trong context
+        authLogin({
           isAuthenticated: true,
-          token: "fake-jwt-token-" + Math.random().toString(36).substring(2),
-        };
+        });
 
-        // Sử dụng hàm login từ AuthContext thay vì lưu trực tiếp vào localStorage
-        login(userData);
-
-        console.log("Đăng nhập thành công:", userData);
+        console.log("Đăng nhập thành công:", result);
 
         // Chuyển hướng về trang chủ sau khi đăng nhập
         navigate("/");
       } else {
-        // Hiển thị lỗi nếu đăng nhập thất bại
-        setError(
-          "Email hoặc mật khẩu không hợp lệ. Mật khẩu phải có ít nhất 6 ký tự."
-        );
+        // Xử lý lỗi nếu API trả về thành công nhưng không có token
+        setError("Đăng nhập không thành công. Vui lòng thử lại.");
       }
+    } catch (err) {
+      // Xử lý lỗi từ API
+      setError(err.error || "Đăng nhập không thành công. Vui lòng thử lại.");
+      console.error("Lỗi đăng nhập:", err);
+    } finally {
       setLoading(false);
-    }, 1000); // Giả lập delay 1 giây
+    }
   };
 
   // Kiểm tra xem người dùng đã đăng nhập chưa thông qua AuthContext
@@ -251,6 +254,12 @@ function Login() {
                   </Box>
 
                   <Box component="form" onSubmit={handleSubmit} noValidate>
+                    {error && (
+                      <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+                        {error}
+                      </Alert>
+                    )}
+
                     <TextField
                       margin="normal"
                       required
@@ -387,14 +396,6 @@ function Login() {
                     >
                       {loading ? "Đang xử lý..." : "Đăng nhập"}
                     </Button>
-
-                    {error && (
-                      <Box sx={{ mt: 2, textAlign: "center" }}>
-                        <Typography variant="body2" color="error">
-                          {error}
-                        </Typography>
-                      </Box>
-                    )}
 
                     <Box sx={{ mt: 3, textAlign: "center" }}>
                       <Typography

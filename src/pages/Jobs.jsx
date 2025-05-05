@@ -30,11 +30,13 @@ import SearchIcon from "@mui/icons-material/Search";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import ClearIcon from "@mui/icons-material/Clear";
+import { useNavigate } from "react-router-dom";
 
 function Jobs() {
   const [filterCategory, setFilterCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const theme = useTheme();
+  const navigate = useNavigate();
 
   const jobs = [
     {
@@ -149,6 +151,10 @@ function Jobs() {
       default:
         return "default";
     }
+  };
+
+  const handleApplyClick = (jobId) => {
+    navigate(`/job/${jobId}`);
   };
 
   return (
@@ -296,7 +302,15 @@ function Jobs() {
 
         {/* Danh sách công việc */}
         {filteredJobs.length > 0 ? (
-          <Grid container spacing={2}>
+          <Grid
+            container
+            spacing={2}
+            sx={{
+              "& .MuiGrid-item": {
+                display: "flex",
+              },
+            }}
+          >
             {filteredJobs.map((job) => (
               <Grid
                 item
@@ -305,20 +319,25 @@ function Jobs() {
                 md={4}
                 lg={2.4}
                 key={job.id}
-                sx={{ mb: { xs: 2, sm: 2, md: 3 } }}
+                sx={{
+                  mb: { xs: 2, sm: 2, md: 3 },
+                  width: { lg: "20%" },
+                  flexBasis: { lg: "20%" },
+                  maxWidth: { lg: "20%" },
+                }}
               >
                 <Card
                   elevation={2}
                   sx={{
-                    height: "100%",
+                    height: { xs: "360px", md: "340px" },
+                    width: "100%",
                     display: "flex",
                     flexDirection: "column",
                     transition: "all 0.3s ease",
                     borderRadius: 3,
                     overflow: "hidden",
                     border: "1px solid rgba(0,0,0,0.06)",
-                    width: "100%",
-                    maxWidth: { xs: "100%", sm: "100%", md: "100%" },
+                    flexGrow: 1,
                     "&:hover": {
                       transform: "translateY(-10px)",
                       boxShadow: "0 15px 30px rgba(0,0,0,0.1)",
@@ -331,153 +350,160 @@ function Jobs() {
                       flexGrow: 1,
                       p: { xs: 2, md: 2.5 },
                       "&:last-child": { pb: 2 },
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
                     }}
                   >
-                    <Box sx={{ mb: 1.5 }}>
-                      <Chip
-                        label={getCategoryLabel(job.category)}
-                        color={getCategoryColor(job.category)}
-                        size="small"
-                        sx={{ mb: 1, fontWeight: 500, fontSize: "0.7rem" }}
-                      />
-                      <Typography
-                        variant="h6"
-                        component="h2"
-                        gutterBottom
-                        color="primary.dark"
-                        sx={{
-                          fontWeight: "bold",
-                          fontSize: {
-                            xs: "1rem",
-                            sm: "1rem",
-                            md: "0.9rem",
-                            lg: "0.95rem",
-                          },
-                          height: "2.5rem",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                        }}
-                      >
-                        {job.title}
-                      </Typography>
-                    </Box>
+                    <Box>
+                      <Box sx={{ mb: 1.5, height: "5rem" }}>
+                        <Chip
+                          label={getCategoryLabel(job.category)}
+                          color={getCategoryColor(job.category)}
+                          size="small"
+                          sx={{ mb: 1, fontWeight: 500, fontSize: "0.7rem" }}
+                        />
+                        <Typography
+                          variant="h6"
+                          component="h2"
+                          color="primary.dark"
+                          sx={{
+                            fontWeight: "bold",
+                            fontSize: {
+                              xs: "1rem",
+                              md: "0.9rem",
+                              lg: "0.95rem",
+                            },
+                            height: "2.5rem",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            lineHeight: 1.3,
+                          }}
+                        >
+                          {job.title}
+                        </Typography>
+                      </Box>
 
-                    <Stack spacing={1} sx={{ mb: 1 }}>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                        }}
-                      >
-                        <BusinessIcon
-                          fontSize="small"
-                          color="action"
-                          sx={{ fontSize: "0.9rem" }}
-                        />
-                        <Typography
-                          variant="body2"
+                      <Stack spacing={1} sx={{ height: "8rem" }}>
+                        <Box
                           sx={{
-                            fontSize: { xs: "0.85rem", lg: "0.8rem" },
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            height: "1.5rem",
                           }}
                         >
-                          {job.company}
-                        </Typography>
-                      </Box>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                        }}
-                      >
-                        <LocationOnIcon
-                          fontSize="small"
-                          color="action"
-                          sx={{ fontSize: "0.9rem" }}
-                        />
-                        <Typography
-                          variant="body2"
+                          <BusinessIcon
+                            fontSize="small"
+                            color="action"
+                            sx={{ fontSize: "0.9rem", minWidth: "18px" }}
+                          />
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: { xs: "0.85rem", lg: "0.8rem" },
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {job.company}
+                          </Typography>
+                        </Box>
+                        <Box
                           sx={{
-                            fontSize: { xs: "0.85rem", lg: "0.8rem" },
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            height: "1.5rem",
                           }}
                         >
-                          {job.location}
-                        </Typography>
-                      </Box>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                        }}
-                      >
-                        <AttachMoneyIcon
-                          fontSize="small"
-                          color="action"
-                          sx={{ fontSize: "0.9rem" }}
-                        />
-                        <Typography
-                          variant="body2"
+                          <LocationOnIcon
+                            fontSize="small"
+                            color="action"
+                            sx={{ fontSize: "0.9rem", minWidth: "18px" }}
+                          />
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: { xs: "0.85rem", lg: "0.8rem" },
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {job.location}
+                          </Typography>
+                        </Box>
+                        <Box
                           sx={{
-                            fontSize: { xs: "0.85rem", lg: "0.8rem" },
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            height: "1.5rem",
                           }}
                         >
-                          {job.salary}
-                        </Typography>
-                      </Box>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                        }}
-                      >
-                        <AccessTimeIcon
-                          fontSize="small"
-                          color="action"
-                          sx={{ fontSize: "0.9rem" }}
-                        />
-                        <Typography
-                          variant="body2"
+                          <AttachMoneyIcon
+                            fontSize="small"
+                            color="action"
+                            sx={{ fontSize: "0.9rem", minWidth: "18px" }}
+                          />
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: { xs: "0.85rem", lg: "0.8rem" },
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {job.salary}
+                          </Typography>
+                        </Box>
+                        <Box
                           sx={{
-                            fontSize: { xs: "0.85rem", lg: "0.8rem" },
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            height: "1.5rem",
                           }}
                         >
-                          {job.time}
-                        </Typography>
-                      </Box>
-                    </Stack>
+                          <AccessTimeIcon
+                            fontSize="small"
+                            color="action"
+                            sx={{ fontSize: "0.9rem", minWidth: "18px" }}
+                          />
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontSize: { xs: "0.85rem", lg: "0.8rem" },
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {job.time}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Box>
                   </CardContent>
                   <Divider />
-                  <CardActions sx={{ p: { xs: 1.5, md: 1.5 } }}>
+                  <CardActions
+                    sx={{ p: { xs: 1.5, md: 1.5 }, height: "3.5rem" }}
+                  >
                     <Button
                       variant="contained"
                       color="primary"
                       fullWidth
+                      onClick={() => handleApplyClick(job.id)}
                       sx={{
                         py: 0.5,
                         fontWeight: "bold",
-                        fontSize: {
-                          xs: "0.85rem",
-                          sm: "0.85rem",
-                          md: "0.75rem",
-                        },
+                        fontSize: { xs: "0.85rem", md: "0.75rem" },
                         borderRadius: 2,
                         transition: "all 0.3s ease",
                         "&:hover": {

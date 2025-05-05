@@ -1,48 +1,53 @@
-import React from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import React from "react";
+import { createBrowserRouter } from "react-router-dom";
 
 // Layouts
-import MainLayout from '../layouts/MainLayout';
+import MainLayout from "../layouts/MainLayout";
 
 // Pages
-import Home from '../pages/Home';
-import Jobs from '../pages/Jobs';
-import About from '../pages/About';
-import Login from '../pages/Login';
-import Register from '../pages/Register';
+import Home from "../pages/Home";
+import Jobs from "../pages/Jobs";
+import About from "../pages/About";
+import Login from "../pages/Login";
+import Register from "../pages/Register";
+import JobDetail from "../pages/JobDetail";
 
 // Định nghĩa routes
 const router = createBrowserRouter([
   {
-    path: '/',
+    path: "/",
     element: <MainLayout />,
     children: [
       {
         index: true,
-        element: <Home />
+        element: <Home />,
       },
       {
-        path: 'jobs',
-        element: <Jobs />
+        path: "jobs",
+        element: <Jobs />,
       },
       {
-        path: 'about',
-        element: <About />
+        path: "job/:id",
+        element: <JobDetail />,
       },
       {
-        path: 'login',
-        element: <Login />
+        path: "about",
+        element: <About />,
       },
       {
-        path: 'register',
-        element: <Register />
+        path: "login",
+        element: <Login />,
       },
       {
-        path: '*',
-        element: <div>404 - Không tìm thấy trang</div>
-      }
-    ]
-  }
+        path: "register",
+        element: <Register />,
+      },
+      {
+        path: "*",
+        element: <div>404 - Không tìm thấy trang</div>,
+      },
+    ],
+  },
 ]);
 
 export default router;

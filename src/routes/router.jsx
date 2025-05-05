@@ -1,5 +1,5 @@
 import React from "react";
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 
 // Layouts
 import MainLayout from "../layouts/MainLayout";
@@ -17,28 +17,48 @@ import PostList from "../pages/posts/PostList";
 import CreatePost from "../pages/posts/CreatePost";
 import EditPost from "../pages/posts/EditPost";
 
+// Kiểm tra đăng nhập
+const isAuthenticated = () => {
+  return localStorage.getItem("token") !== null;
+};
+
+// Component bảo vệ route
+const ProtectedRoute = ({ element }) => {
+  return isAuthenticated() ? element : <Navigate to="/login" />;
+};
+
 // Định nghĩa routes
 const router = createBrowserRouter([
   {
     path: "/",
     element: <MainLayout />,
     children: [
+      // Trang chính
       {
         index: true,
         element: <Home />,
       },
       {
-        path: "jobs",
-        element: <Jobs />,
-      },
-      {
-        path: "jobs/:id",
-        element: <JobDetail />,
-      },
-      {
         path: "about",
         element: <About />,
       },
+
+      // Công việc
+      {
+        path: "jobs",
+        children: [
+          {
+            index: true,
+            element: <Jobs />,
+          },
+          {
+            path: ":slug/:id",
+            element: <JobDetail />,
+          },
+        ],
+      },
+
+      // Xác thực
       {
         path: "login",
         element: <Login />,
@@ -47,26 +67,37 @@ const router = createBrowserRouter([
         path: "register",
         element: <Register />,
       },
+
+      // Trang người dùng (yêu cầu đăng nhập)
       {
         path: "profile",
-        element: <Profile />,
+        element: <ProtectedRoute element={<Profile />} />,
       },
       {
         path: "dashboard",
-        element: <Dashboard />,
+        element: <ProtectedRoute element={<Dashboard />} />,
       },
+
+      // Bài đăng
       {
         path: "posts",
-        element: <PostList />,
+        children: [
+          {
+            index: true,
+            element: <PostList />,
+          },
+          {
+            path: "create",
+            element: <ProtectedRoute element={<CreatePost />} />,
+          },
+          {
+            path: "edit/:id",
+            element: <ProtectedRoute element={<EditPost />} />,
+          },
+        ],
       },
-      {
-        path: "posts/create",
-        element: <CreatePost />,
-      },
-      {
-        path: "posts/edit/:id",
-        element: <EditPost />,
-      },
+
+      // Trang lỗi
       {
         path: "*",
         element: <div>404 - Không tìm thấy trang</div>,

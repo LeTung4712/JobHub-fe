@@ -27,17 +27,11 @@ import {
   RadioGroup,
   FormControlLabel,
   FormLabel,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Drawer,
   useMediaQuery,
   Badge,
   Fab,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  CircularProgress,
 } from "@mui/material";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import BusinessIcon from "@mui/icons-material/Business";
@@ -47,11 +41,11 @@ import SearchIcon from "@mui/icons-material/Search";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import ClearIcon from "@mui/icons-material/Clear";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import TuneIcon from "@mui/icons-material/Tune";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckIcon from "@mui/icons-material/Check";
 import { useNavigate } from "react-router-dom";
+import { getJobs } from "../../api/jobs";
 
 function Jobs() {
   const [filterCategory, setFilterCategory] = useState("all");
@@ -62,14 +56,30 @@ function Jobs() {
   const [postDate, setPostDate] = useState("all");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(12);
+  const [totalJobs, setTotalJobs] = useState(0);
 
   const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isTablet = useMediaQuery(theme.breakpoints.down("md"));
 
-  // Dữ liệu công việc mẫu (bao gồm dữ liệu cũ + thêm type và date)
-  const jobs = [
+  // Gọi API khi component mount hoặc khi bộ lọc thay đổi
+  useEffect(() => {
+    fetchJobs();
+  }, [page, limit, filterCategory, postType, salaryRange, postDate]);
+
+  // Cập nhật số lượng bộ lọc đang kích hoạt
+  useEffect(() => {
+    updateActiveFiltersCount();
+  }, [filterCategory, postType, salaryRange, postDate]);
+
+  // Mảng công việc mẫu để sử dụng khi không có dữ liệu từ API
+  const sampleJobs = [
     {
       id: 1,
       title: "Frontend Developer",
@@ -77,10 +87,10 @@ function Jobs() {
       location: "Hà Nội",
       category: "development",
       salary: "15-25 triệu",
-      salaryValue: 20, // Giá trị số cho filter
+      salaryValue: 20,
       time: "Toàn thời gian",
-      type: "hiring", // tuyển người
-      date: "2023-10-15", // Thời gian đăng
+      type: "hiring",
+      date: "2023-10-15",
     },
     {
       id: 2,
@@ -94,93 +104,10 @@ function Jobs() {
       type: "hiring",
       date: "2023-10-20",
     },
-    {
-      id: 3,
-      title: "UX/UI Designer",
-      company: "Công ty DEF",
-      location: "Đà Nẵng",
-      category: "design",
-      salary: "15-22 triệu",
-      salaryValue: 18,
-      time: "Toàn thời gian",
-      type: "hiring",
-      date: "2023-09-30",
-    },
-    {
-      id: 4,
-      title: "Product Manager",
-      company: "Công ty GHI",
-      location: "Hà Nội",
-      category: "management",
-      salary: "30-45 triệu",
-      salaryValue: 38,
-      time: "Toàn thời gian",
-      type: "hiring",
-      date: "2023-10-05",
-    },
-    {
-      id: 5,
-      title: "Data Analyst",
-      company: "Công ty JKL",
-      location: "Hồ Chí Minh",
-      category: "data",
-      salary: "18-25 triệu",
-      salaryValue: 22,
-      time: "Toàn thời gian",
-      type: "hiring",
-      date: "2023-11-01",
-    },
-    {
-      id: 6,
-      title: "DevOps Engineer",
-      company: "Công ty MNO",
-      location: "Hà Nội",
-      category: "development",
-      salary: "25-35 triệu",
-      salaryValue: 30,
-      time: "Toàn thời gian",
-      type: "hiring",
-      date: "2023-11-10",
-    },
-    {
-      id: 7,
-      title: "Senior React Developer",
-      company: "Nguyễn Văn A",
-      location: "Hồ Chí Minh",
-      category: "development",
-      salary: "30-40 triệu",
-      salaryValue: 35,
-      time: "Toàn thời gian",
-      type: "seeking", // tìm việc
-      date: "2023-10-25",
-    },
-    {
-      id: 8,
-      title: "Graphic Designer",
-      company: "Trần Thị B",
-      location: "Hà Nội",
-      category: "design",
-      salary: "15-20 triệu",
-      salaryValue: 17,
-      time: "Bán thời gian",
-      type: "seeking",
-      date: "2023-11-05",
-    },
-    {
-      id: 9,
-      title: "Project Manager",
-      company: "Lê Văn C",
-      location: "Đà Nẵng",
-      category: "management",
-      salary: "30-40 triệu",
-      salaryValue: 35,
-      time: "Toàn thời gian",
-      type: "seeking",
-      date: "2023-10-10",
-    },
+    // ... giữ lại một số mẫu để test trong trường hợp API không hoạt động
   ];
 
-  // Hàm kiểm tra thời gian đăng
+  // Kiểm tra thời gian đăng
   const checkPostDate = (jobDate, filterDate) => {
     if (filterDate === "all") return true;
 
@@ -204,40 +131,53 @@ function Jobs() {
     }
   };
 
-  // Lọc việc làm dựa trên tất cả các bộ lọc
-  const filteredJobs = jobs.filter((job) => {
-    // Lọc theo danh mục
-    const categoryMatch =
-      filterCategory === "all" || job.category === filterCategory;
+  // Kiểm tra và sử dụng dữ liệu mẫu nếu không có dữ liệu từ API
+  const jobsToDisplay = jobs.length > 0 ? jobs : sampleJobs;
 
-    // Lọc theo tìm kiếm
-    const searchMatch =
-      searchQuery === "" ||
-      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.location.toLowerCase().includes(searchQuery.toLowerCase());
+  // Lọc việc làm khi không có dữ liệu từ API
+  const filteredJobs =
+    jobs.length > 0
+      ? jobs
+      : sampleJobs.filter((job) => {
+          // Lọc theo danh mục
+          const categoryMatch =
+            filterCategory === "all" || job.category === filterCategory;
 
-    // Lọc theo loại bài đăng (tuyển dụng/tìm việc)
-    const typeMatch = postType === "all" || job.type === postType;
+          // Lọc theo tìm kiếm
+          const searchMatch =
+            searchQuery === "" ||
+            job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            job.location.toLowerCase().includes(searchQuery.toLowerCase());
 
-    // Lọc theo khoảng lương
-    const salaryMatch =
-      job.salaryValue >= salaryRange[0] && job.salaryValue <= salaryRange[1];
+          // Lọc theo loại bài đăng
+          const typeMatch = postType === "all" || job.type === postType;
 
-    // Lọc theo thời gian đăng
-    const dateMatch = checkPostDate(job.date, postDate);
+          // Lọc theo khoảng lương
+          const salaryMatch =
+            job.salaryValue >= salaryRange[0] &&
+            job.salaryValue <= salaryRange[1];
 
-    return (
-      categoryMatch && searchMatch && typeMatch && salaryMatch && dateMatch
-    );
-  });
+          // Lọc theo thời gian đăng
+          const dateMatch = checkPostDate(job.date, postDate);
+
+          return (
+            categoryMatch &&
+            searchMatch &&
+            typeMatch &&
+            salaryMatch &&
+            dateMatch
+          );
+        });
 
   const handleCategoryChange = (event) => {
     setFilterCategory(event.target.value);
+    setPage(1); // Reset về trang đầu tiên khi thay đổi bộ lọc
   };
 
   const handlePostTypeChange = (event) => {
     setPostType(event.target.value);
+    setPage(1); // Reset về trang đầu tiên
   };
 
   const handleSalaryChange = (event, newValue) => {
@@ -246,6 +186,7 @@ function Jobs() {
 
   const handlePostDateChange = (event) => {
     setPostDate(event.target.value);
+    setPage(1); // Reset về trang đầu tiên
   };
 
   const handleSearchChange = (event) => {
@@ -254,6 +195,8 @@ function Jobs() {
 
   const clearSearch = () => {
     setSearchQuery("");
+    setPage(1);
+    fetchJobs(); // Tải lại dữ liệu khi xóa tìm kiếm
   };
 
   const resetFilters = () => {
@@ -262,6 +205,8 @@ function Jobs() {
     setSalaryRange([0, 50]);
     setPostDate("all");
     setSearchQuery("");
+    setPage(1);
+    fetchJobs(); // Tải lại dữ liệu khi reset bộ lọc
     updateActiveFiltersCount();
   };
 
@@ -280,6 +225,8 @@ function Jobs() {
   const applyMobileFilters = () => {
     setMobileFiltersOpen(false);
     updateActiveFiltersCount();
+    setPage(1); // Reset về trang đầu tiên
+    fetchJobs();
   };
 
   // Cập nhật số lượng bộ lọc đang kích hoạt
@@ -293,11 +240,6 @@ function Jobs() {
 
     setActiveFiltersCount(count);
   };
-
-  // Gọi hàm cập nhật số bộ lọc khi component mount và mỗi khi thay đổi bộ lọc
-  useEffect(() => {
-    updateActiveFiltersCount();
-  }, [filterCategory, postType, salaryRange, postDate]);
 
   const getCategoryLabel = (category) => {
     switch (category) {
@@ -329,8 +271,79 @@ function Jobs() {
     }
   };
 
-  const handleApplyClick = (jobId) => {
-    navigate(`/jobs/${jobId}`);
+  const handleApplyClick = (jobId, jobTitle) => {
+    // Tạo slug từ tiêu đề
+    const slug = jobTitle
+      .toLowerCase()
+      .replace(/[^\w\sÀ-ỹ]/g, "") // Loại bỏ ký tự đặc biệt nhưng giữ dấu tiếng Việt
+      .replace(/\s+/g, "-") // Thay thế khoảng trắng bằng dấu gạch ngang
+      .replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a")
+      .replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e")
+      .replace(/ì|í|ị|ỉ|ĩ/g, "i")
+      .replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o")
+      .replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u")
+      .replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y")
+      .replace(/đ/g, "d")
+      .replace(/-{2,}/g, "-") // Thay thế nhiều dấu gạch ngang liên tiếp bằng một dấu
+      .substring(0, 50); // Giới hạn độ dài slug
+
+    navigate(`/jobs/${slug}/${jobId}`);
+  };
+
+  // Hàm để lấy danh sách công việc từ API
+  const fetchJobs = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Chuẩn bị tham số cho API
+      const params = {
+        page,
+        limit,
+        search: searchQuery || undefined,
+        category: filterCategory !== "all" ? filterCategory : undefined,
+        type: postType !== "all" ? postType : undefined,
+        minSalary: salaryRange[0] || undefined,
+        maxSalary: salaryRange[1] || undefined,
+      };
+
+      // Nếu có lọc theo ngày, thêm vào params
+      if (postDate !== "all") {
+        params.postDate = postDate;
+      }
+
+      // Gọi API
+      const response = await getJobs(params);
+
+      if (response.success) {
+        // Xử lý dữ liệu từ API
+        const processedJobs = response.data.map((job) => ({
+          ...job,
+          // Đảm bảo có các trường cần thiết cho UI
+          id: job._id || job.id,
+          category: job.category || "other",
+          type: job.type || "hiring",
+          salaryValue: job.salaryMin || job.salaryValue || 0,
+        }));
+
+        setJobs(processedJobs || []);
+        setTotalJobs(response.total || 0);
+      } else {
+        setError(response.message || "Không thể tải danh sách công việc");
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải danh sách công việc:", err);
+      setError("Đã xảy ra lỗi khi tải danh sách công việc");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Gọi API khi submit form tìm kiếm
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setPage(1); // Reset về trang đầu tiên
+    fetchJobs();
   };
 
   return (
@@ -377,6 +390,17 @@ function Jobs() {
           </Typography>
         </Box>
 
+        {/* Hiển thị lỗi nếu có */}
+        {error && (
+          <Alert
+            severity="error"
+            sx={{ mb: 4, borderRadius: 2 }}
+            onClose={() => setError(null)}
+          >
+            {error}
+          </Alert>
+        )}
+
         {/* Thanh tìm kiếm và lọc */}
         <Paper
           elevation={3}
@@ -388,134 +412,136 @@ function Jobs() {
             boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
           }}
         >
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={{ xs: 2, md: 3 }}
-            alignItems={{ xs: "stretch", md: "center" }}
-          >
-            <TextField
-              fullWidth
-              placeholder="Tên vị trí, công ty hoặc địa điểm..."
-              variant="outlined"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="primary" />
-                  </InputAdornment>
-                ),
-                endAdornment: searchQuery && (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={clearSearch}>
-                      <ClearIcon />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                },
-              }}
-            />
-
-            <Box
-              sx={{
-                display: "flex",
-                gap: 2,
-                flexDirection: { xs: "row", md: "row" },
-                width: { xs: "100%", md: "auto" },
-              }}
+          <form onSubmit={handleSearchSubmit}>
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={{ xs: 2, md: 3 }}
+              alignItems={{ xs: "stretch", md: "center" }}
             >
-              <FormControl
+              <TextField
+                fullWidth
+                placeholder="Tên vị trí, công ty hoặc địa điểm..."
+                variant="outlined"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="primary" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: searchQuery && (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={clearSearch}>
+                        <ClearIcon />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
                 sx={{
-                  flexGrow: { xs: 1, md: 0 },
-                  minWidth: { xs: "auto", md: 200 },
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 2,
                   },
                 }}
-              >
-                <InputLabel id="category-filter-label">Danh mục</InputLabel>
-                <Select
-                  labelId="category-filter-label"
-                  id="category-filter"
-                  value={filterCategory}
-                  onChange={handleCategoryChange}
-                  label="Danh mục"
-                  startAdornment={
-                    <InputAdornment position="start">
-                      <FilterListIcon color="primary" sx={{ mr: 1 }} />
-                    </InputAdornment>
-                  }
-                >
-                  <MenuItem value="all">Tất cả</MenuItem>
-                  <MenuItem value="development">Phát triển</MenuItem>
-                  <MenuItem value="design">Thiết kế</MenuItem>
-                  <MenuItem value="management">Quản lý</MenuItem>
-                  <MenuItem value="data">Dữ liệu</MenuItem>
-                </Select>
-              </FormControl>
+              />
 
-              {isMobile ? (
-                <Badge
-                  badgeContent={activeFiltersCount}
-                  color="primary"
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  flexDirection: { xs: "row", md: "row" },
+                  width: { xs: "100%", md: "auto" },
+                }}
+              >
+                <FormControl
                   sx={{
-                    "& .MuiBadge-badge": {
-                      right: 10,
-                      top: 10,
+                    flexGrow: { xs: 1, md: 0 },
+                    minWidth: { xs: "auto", md: 200 },
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
                     },
                   }}
                 >
+                  <InputLabel id="category-filter-label">Danh mục</InputLabel>
+                  <Select
+                    labelId="category-filter-label"
+                    id="category-filter"
+                    value={filterCategory}
+                    onChange={handleCategoryChange}
+                    label="Danh mục"
+                    startAdornment={
+                      <InputAdornment position="start">
+                        <FilterListIcon color="primary" sx={{ mr: 1 }} />
+                      </InputAdornment>
+                    }
+                  >
+                    <MenuItem value="all">Tất cả</MenuItem>
+                    <MenuItem value="development">Phát triển</MenuItem>
+                    <MenuItem value="design">Thiết kế</MenuItem>
+                    <MenuItem value="management">Quản lý</MenuItem>
+                    <MenuItem value="data">Dữ liệu</MenuItem>
+                  </Select>
+                </FormControl>
+
+                {isMobile ? (
+                  <Badge
+                    badgeContent={activeFiltersCount}
+                    color="primary"
+                    sx={{
+                      "& .MuiBadge-badge": {
+                        right: 10,
+                        top: 10,
+                      },
+                    }}
+                  >
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={toggleFilters}
+                      startIcon={<TuneIcon />}
+                      fullWidth
+                      sx={{
+                        borderRadius: 2,
+                        height: "56px",
+                      }}
+                    >
+                      Bộ lọc
+                    </Button>
+                  </Badge>
+                ) : (
                   <Button
-                    variant="contained"
+                    variant={showFilters ? "contained" : "outlined"}
                     color="primary"
                     onClick={toggleFilters}
                     startIcon={<TuneIcon />}
-                    fullWidth
-                    sx={{
-                      borderRadius: 2,
-                      height: "56px",
-                    }}
+                    sx={{ borderRadius: 2, whiteSpace: "nowrap" }}
                   >
-                    Bộ lọc
+                    Bộ lọc khác
+                    {activeFiltersCount > 0 && (
+                      <Box
+                        component="span"
+                        sx={{
+                          ml: 1,
+                          bgcolor: "white",
+                          color: "primary.main",
+                          width: 20,
+                          height: 20,
+                          borderRadius: "50%",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "0.75rem",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {activeFiltersCount}
+                      </Box>
+                    )}
                   </Button>
-                </Badge>
-              ) : (
-                <Button
-                  variant={showFilters ? "contained" : "outlined"}
-                  color="primary"
-                  onClick={toggleFilters}
-                  startIcon={<TuneIcon />}
-                  sx={{ borderRadius: 2, whiteSpace: "nowrap" }}
-                >
-                  Bộ lọc khác
-                  {activeFiltersCount > 0 && (
-                    <Box
-                      component="span"
-                      sx={{
-                        ml: 1,
-                        bgcolor: "white",
-                        color: "primary.main",
-                        width: 20,
-                        height: 20,
-                        borderRadius: "50%",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "0.75rem",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {activeFiltersCount}
-                    </Box>
-                  )}
-                </Button>
-              )}
-            </Box>
-          </Stack>
+                )}
+              </Box>
+            </Stack>
+          </form>
 
           {/* Bộ lọc mở rộng cho desktop */}
           {!isMobile && (
@@ -676,7 +702,13 @@ function Jobs() {
                 color: theme.palette.primary.main,
               }}
             >
-              Đang hiển thị {filteredJobs.length} việc làm
+              {loading ? (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <CircularProgress size={16} /> Đang tải dữ liệu...
+                </Box>
+              ) : (
+                `Đang hiển thị ${filteredJobs.length} việc làm`
+              )}
             </Typography>
 
             <Typography variant="body2" color="text.secondary">
@@ -862,7 +894,11 @@ function Jobs() {
         </Drawer>
 
         {/* Danh sách công việc */}
-        {filteredJobs.length > 0 ? (
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+            <CircularProgress />
+          </Box>
+        ) : filteredJobs.length > 0 ? (
           <Grid
             container
             spacing={2}
@@ -1067,7 +1103,14 @@ function Jobs() {
                               whiteSpace: "nowrap",
                             }}
                           >
-                            {job.time}
+                            {job.deadline
+                              ? typeof job.deadline === "string" &&
+                                job.deadline.includes("T")
+                                ? new Date(job.deadline).toLocaleDateString(
+                                    "vi-VN"
+                                  )
+                                : job.deadline
+                              : "Không có hạn"}
                           </Typography>
                         </Box>
                       </Stack>
@@ -1081,7 +1124,7 @@ function Jobs() {
                       variant="contained"
                       color="primary"
                       fullWidth
-                      onClick={() => handleApplyClick(job.id)}
+                      onClick={() => handleApplyClick(job.id, job.title)}
                       sx={{
                         py: 0.5,
                         fontWeight: "bold",

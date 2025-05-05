@@ -182,7 +182,7 @@ function Navbar() {
                     margin: "8px 16px",
                     borderRadius: 1,
                   }}
-                  onClick={() => handleNavigation("/jobs/create")}
+                  onClick={() => handleNavigation("/posts/create")}
                 >
                   <AddIcon sx={{ mr: 1 }} />
                   <ListItemText primary="Đăng bài mới" />
@@ -247,7 +247,7 @@ function Navbar() {
           color="inherit"
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => handleNavigation("/jobs/create")}
+          onClick={() => handleNavigation("/posts/create")}
           sx={{
             mx: 1,
             backgroundColor: "rgba(255,255,255,0.15)",

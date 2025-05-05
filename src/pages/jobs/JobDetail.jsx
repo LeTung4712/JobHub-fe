@@ -26,6 +26,7 @@ import {
   DialogTitle,
   DialogContent,
   useTheme,
+  CircularProgress,
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
@@ -46,12 +47,21 @@ import {
   AttachFile as AttachFileIcon,
   InsertEmoticon as EmojiIcon,
   Close as CloseIcon,
+  Check as CheckIcon,
 } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
+import { getJob } from "../../api/jobs";
+
+// Kiểm tra đăng nhập
+const isAuthenticated = () => {
+  return localStorage.getItem("token") !== null;
+};
 
 const JobDetail = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const params = useParams();
+  // Lấy ID từ URL
+  const id = params.id; // id sẽ được tự động giải nén từ URL do cấu hình route
   const theme = useTheme();
 
   // State để theo dõi bước trong form liên hệ
@@ -60,9 +70,11 @@ const JobDetail = () => {
   // State cho dialog liên hệ và thông báo
   const [openContactDialog, setOpenContactDialog] = useState(false);
   const [openSuccessAlert, setOpenSuccessAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   // State lưu tin tuyển dụng
   const [isSaved, setIsSaved] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
 
   // State cho tin nhắn
   const [messageData, setMessageData] = useState({
@@ -75,8 +87,101 @@ const JobDetail = () => {
   // Lịch sử tin nhắn
   const [messageHistory, setMessageHistory] = useState([]);
 
-  // Dữ liệu chi tiết việc làm (mẫu)
-  const jobDetail = {
+  // State cho dữ liệu công việc
+  const [jobDetail, setJobDetail] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [applied, setApplied] = useState(false);
+  const [applyLoading, setApplyLoading] = useState(false);
+
+  // Kiểm tra công việc đã lưu
+  useEffect(() => {
+    const checkSavedJob = async () => {
+      // Kiểm tra xem công việc đã được lưu chưa
+      if (isAuthenticated()) {
+        // TODO: Thêm API kiểm tra công việc đã lưu
+        // Giả lập
+        const savedJobs = JSON.parse(localStorage.getItem("savedJobs") || "[]");
+        if (savedJobs.includes(id)) {
+          setIsSaved(true);
+        }
+      }
+    };
+
+    checkSavedJob();
+  }, [id]);
+
+  // Lấy thông tin chi tiết công việc từ API
+  useEffect(() => {
+    const fetchJobDetail = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await getJob(id);
+        if (response.success) {
+          // Xử lý dữ liệu từ API
+          const job = response.data;
+          const processedJob = {
+            ...job,
+            // Đảm bảo các trường cần thiết cho UI
+            id: job._id || job.id,
+            title: job.title || "Không có tiêu đề",
+            company: job.author?.company || job.company || "Không xác định",
+            location: job.location || "Không xác định",
+            salary:
+              job.salary ||
+              `${job.salaryMin || 0} - ${job.salaryMax || 0} triệu`,
+            time: job.workingTime || job.time || "Toàn thời gian",
+            description: job.description || "Không có mô tả",
+            // Đảm bảo các mảng dữ liệu đều có giá trị để tránh lỗi map
+            requirements: job.requirements || [],
+            benefits: job.benefits || [],
+            // Thông tin công ty và nhà tuyển dụng
+            industry: job.industry || "Công nghệ thông tin",
+            companySize: job.companySize || "Không xác định",
+            website: job.website || "#",
+            companyDescription: job.companyDescription || "Không có thông tin",
+            // Thông tin liên hệ
+            recruiterName: job.author?.fullName || "Nhà tuyển dụng",
+            recruiterPosition: job.author?.currentPosition || "HR Manager",
+            recruiterAvatar:
+              job.author?.avatar ||
+              "https://randomuser.me/api/portraits/men/32.jpg",
+            recruiterPhone: job.author?.phone || "Không có thông tin",
+            recruiterEmail: job.author?.email || "Không có thông tin",
+            // Thời gian
+            createdAt: job.createdAt,
+            deadline: job.deadline,
+          };
+          setJobDetail(processedJob);
+
+          // Kiểm tra xem người dùng đã ứng tuyển hay chưa
+          if (
+            job.applications &&
+            job.applications.some(
+              (app) =>
+                app.applicant &&
+                app.applicant._id === localStorage.getItem("userId")
+            )
+          ) {
+            setApplied(true);
+          }
+        } else {
+          setError(response.message || "Không thể tải thông tin công việc");
+        }
+      } catch (err) {
+        console.error("Lỗi khi tải thông tin công việc:", err);
+        setError("Đã xảy ra lỗi khi tải thông tin công việc");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobDetail();
+  }, [id]);
+
+  // Dữ liệu chi tiết việc làm mẫu (sử dụng khi API chưa hoàn thiện)
+  const sampleJobDetail = {
     id: id,
     title: "Senior Frontend Developer",
     company: "Tech Solutions Vietnam",
@@ -118,6 +223,8 @@ const JobDetail = () => {
     recruiterEmail: "hr@techsolutions.vn",
   };
 
+  // Sử dụng dữ liệu mẫu nếu không có dữ liệu từ API
+  const displayedJobDetail = jobDetail || sampleJobDetail;
 
   // Các bước trong tiến trình ứng tuyển
   const steps = ["Thông tin chi tiết"];
@@ -131,14 +238,47 @@ const JobDetail = () => {
     setOpenContactDialog(false);
   };
 
-  // Hàm xử lý đóng thông báo
-  const handleCloseAlert = () => {
-    setOpenSuccessAlert(false);
+  // Hàm xử lý thành công
+  const showSuccessMessage = (message) => {
+    setSuccessMessage(message);
+    setOpenSuccessAlert(true);
   };
 
   // Hàm xử lý lưu việc làm
-  const handleToggleSave = () => {
-    setIsSaved(!isSaved);
+  const handleToggleSave = async () => {
+    if (!isAuthenticated()) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      setSaveLoading(true);
+
+      // TODO: Thêm API lưu/hủy lưu công việc
+      // Giả lập
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Lưu vào localStorage tạm thời
+      const savedJobs = JSON.parse(localStorage.getItem("savedJobs") || "[]");
+
+      if (isSaved) {
+        // Xóa khỏi danh sách đã lưu
+        const newSavedJobs = savedJobs.filter((jobId) => jobId !== id);
+        localStorage.setItem("savedJobs", JSON.stringify(newSavedJobs));
+        setIsSaved(false);
+        showSuccessMessage("Đã xóa khỏi danh sách lưu");
+      } else {
+        // Thêm vào danh sách đã lưu
+        savedJobs.push(id);
+        localStorage.setItem("savedJobs", JSON.stringify(savedJobs));
+        setIsSaved(true);
+        showSuccessMessage("Đã lưu công việc vào danh sách");
+      }
+    } catch (err) {
+      console.error("Lỗi khi lưu/hủy lưu công việc:", err);
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
   // Hàm xử lý thay đổi dữ liệu form
@@ -189,8 +329,84 @@ const JobDetail = () => {
     }));
 
     setOpenContactDialog(false);
-    setOpenSuccessAlert(true);
+    showSuccessMessage(
+      "Tin nhắn của bạn đã được gửi thành công đến nhà tuyển dụng!"
+    );
   };
+
+  // Hàm xử lý ứng tuyển
+  const handleApply = async () => {
+    if (!isAuthenticated()) {
+      navigate("/login");
+      return;
+    }
+
+    if (applied) {
+      showSuccessMessage("Bạn đã ứng tuyển vị trí này trước đó!");
+      return;
+    }
+
+    try {
+      setApplyLoading(true);
+      // TODO: Thêm API ứng tuyển ở đây
+      // const response = await applyForJob(id);
+
+      // Giả lập thành công
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Ghi nhận ứng tuyển thành công
+      setApplied(true);
+
+      // Hiển thị thông báo thành công
+      showSuccessMessage(
+        "Ứng tuyển thành công! Nhà tuyển dụng sẽ sớm liên hệ với bạn."
+      );
+    } catch (err) {
+      console.error("Lỗi khi ứng tuyển:", err);
+      showSuccessMessage("Đã xảy ra lỗi khi ứng tuyển. Vui lòng thử lại sau.");
+    } finally {
+      setApplyLoading(false);
+    }
+  };
+
+  // Hàm xử lý đóng thông báo
+  const handleCloseAlert = () => {
+    setOpenSuccessAlert(false);
+  };
+
+  // Hiển thị giao diện loading
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "80vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Hiển thị thông báo lỗi
+  if (error) {
+    return (
+      <Container maxWidth="md" sx={{ py: 8 }}>
+        <Alert severity="error" sx={{ mb: 4 }}>
+          {error}
+        </Alert>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          variant="contained"
+          onClick={() => navigate("/jobs")}
+        >
+          Quay lại danh sách công việc
+        </Button>
+      </Container>
+    );
+  }
 
   // Hiển thị nội dung dựa trên bước hiện tại
   const getStepContent = (step) => {
@@ -225,7 +441,7 @@ const JobDetail = () => {
                       gutterBottom={true}
                       sx={{ mb: { xs: 2, sm: 0 } }}
                     >
-                      {jobDetail.title}
+                      {displayedJobDetail.title}
                     </Typography>
 
                     <Box>
@@ -233,8 +449,15 @@ const JobDetail = () => {
                         <IconButton
                           onClick={handleToggleSave}
                           color={isSaved ? "primary" : "default"}
+                          disabled={saveLoading}
                         >
-                          {isSaved ? <BookmarkIcon /> : <BookmarkBorderIcon />}
+                          {saveLoading ? (
+                            <CircularProgress size={24} color="inherit" />
+                          ) : isSaved ? (
+                            <BookmarkIcon />
+                          ) : (
+                            <BookmarkBorderIcon />
+                          )}
                         </IconButton>
                       </Tooltip>
                     </Box>
@@ -251,26 +474,26 @@ const JobDetail = () => {
                   >
                     <Chip
                       icon={<BusinessIcon fontSize="small" />}
-                      label={jobDetail.company}
+                      label={displayedJobDetail.company}
                       variant="outlined"
                       size="medium"
                       clickable
                     />
                     <Chip
                       icon={<LocationOnIcon fontSize="small" />}
-                      label={jobDetail.location}
+                      label={displayedJobDetail.location}
                       variant="outlined"
                       size="medium"
                     />
                     <Chip
                       icon={<AttachMoneyIcon fontSize="small" />}
-                      label={jobDetail.salary}
+                      label={displayedJobDetail.salary}
                       variant="outlined"
                       size="medium"
                     />
                     <Chip
                       icon={<WorkIcon fontSize="small" />}
-                      label={jobDetail.time}
+                      label={displayedJobDetail.time}
                       variant="outlined"
                       size="medium"
                     />
@@ -282,14 +505,14 @@ const JobDetail = () => {
                     Mô tả công việc
                   </Typography>
                   <Typography paragraph sx={{ lineHeight: 1.8 }}>
-                    {jobDetail.description}
+                    {displayedJobDetail.description}
                   </Typography>
 
                   <Typography variant="h6" gutterBottom fontWeight="bold">
                     Yêu cầu
                   </Typography>
                   <List sx={{ pl: 2 }}>
-                    {jobDetail.requirements.map((req, index) => (
+                    {displayedJobDetail.requirements.map((req, index) => (
                       <ListItem key={index} disableGutters sx={{ py: 0.5 }}>
                         <ListItemIcon sx={{ minWidth: 30 }}>
                           <CheckCircleIcon color="primary" fontSize="small" />
@@ -303,7 +526,7 @@ const JobDetail = () => {
                     Quyền lợi
                   </Typography>
                   <List sx={{ pl: 2 }}>
-                    {jobDetail.benefits.map((benefit, index) => (
+                    {displayedJobDetail.benefits.map((benefit, index) => (
                       <ListItem key={index} disableGutters sx={{ py: 0.5 }}>
                         <ListItemIcon sx={{ minWidth: 30 }}>
                           <StarIcon color="primary" fontSize="small" />
@@ -338,8 +561,11 @@ const JobDetail = () => {
                     }}
                   >
                     <Avatar
-                      src={jobDetail.companyLogo || jobDetail.recruiterAvatar}
-                      alt={jobDetail.company}
+                      src={
+                        displayedJobDetail.companyLogo ||
+                        displayedJobDetail.recruiterAvatar
+                      }
+                      alt={displayedJobDetail.company}
                       sx={{
                         width: { xs: 80, sm: 70 },
                         height: { xs: 80, sm: 70 },
@@ -348,15 +574,17 @@ const JobDetail = () => {
                       }}
                     />
                     <Box>
-                      <Typography variant="h6">{jobDetail.company}</Typography>
+                      <Typography variant="h6">
+                        {displayedJobDetail.company}
+                      </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {jobDetail.industry}
+                        {displayedJobDetail.industry}
                       </Typography>
                     </Box>
                   </Box>
 
                   <Typography paragraph sx={{ lineHeight: 1.7 }}>
-                    {jobDetail.companyDescription}
+                    {displayedJobDetail.companyDescription}
                   </Typography>
 
                   <Box
@@ -369,18 +597,18 @@ const JobDetail = () => {
                   >
                     <Chip
                       icon={<PeopleIcon />}
-                      label={`${jobDetail.companySize} nhân viên`}
+                      label={`${displayedJobDetail.companySize} nhân viên`}
                       variant="outlined"
                     />
                     <Chip
                       icon={<PublicIcon />}
-                      label={jobDetail.website}
+                      label={displayedJobDetail.website}
                       variant="outlined"
                       component="a"
                       href={
-                        jobDetail.website.startsWith("http")
-                          ? jobDetail.website
-                          : `https://${jobDetail.website}`
+                        displayedJobDetail.website.startsWith("http")
+                          ? displayedJobDetail.website
+                          : `https://${displayedJobDetail.website}`
                       }
                       target="_blank"
                       clickable
@@ -416,8 +644,8 @@ const JobDetail = () => {
                     }}
                   >
                     <Avatar
-                      src={jobDetail.recruiterAvatar}
-                      alt={jobDetail.recruiterName}
+                      src={displayedJobDetail.recruiterAvatar}
+                      alt={displayedJobDetail.recruiterName}
                       sx={{
                         width: { xs: 80, sm: 60 },
                         height: { xs: 80, sm: 60 },
@@ -427,10 +655,10 @@ const JobDetail = () => {
                     />
                     <Box>
                       <Typography variant="subtitle1" fontWeight="bold">
-                        {jobDetail.recruiterName}
+                        {displayedJobDetail.recruiterName}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {jobDetail.recruiterPosition}
+                        {displayedJobDetail.recruiterPosition}
                       </Typography>
                     </Box>
                   </Box>
@@ -450,7 +678,6 @@ const JobDetail = () => {
                       fullWidth
                       variant="contained"
                       color="primary"
-                      startIcon={<ChatIcon />}
                       onClick={handleOpenContactDialog}
                       size="large"
                       sx={{
@@ -460,6 +687,34 @@ const JobDetail = () => {
                       }}
                     >
                       Gửi tin nhắn
+                    </Button>
+
+                    <Button
+                      fullWidth
+                      variant={applied ? "outlined" : "contained"}
+                      color={applied ? "success" : "success"}
+                      size="large"
+                      disabled={applyLoading || applied}
+                      sx={{
+                        flex: { xs: "1 1 100%", sm: "1 1 auto" },
+                        order: { xs: 0, sm: 0 },
+                        mb: { xs: 1, sm: 2 },
+                      }}
+                      onClick={handleApply}
+                      startIcon={applied && <CheckIcon />}
+                    >
+                      {applyLoading ? (
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <CircularProgress size={16} color="inherit" /> Đang xử
+                          lý...
+                        </Box>
+                      ) : applied ? (
+                        "Đã ứng tuyển"
+                      ) : (
+                        "Ứng tuyển ngay"
+                      )}
                     </Button>
 
                     <Box
@@ -474,7 +729,7 @@ const JobDetail = () => {
                         fullWidth
                         variant="outlined"
                         startIcon={<PhoneIcon />}
-                        href={`tel:${jobDetail.recruiterPhone}`}
+                        href={`tel:${displayedJobDetail.recruiterPhone}`}
                         size="large"
                         sx={{
                           flex: "1 1 50%",
@@ -489,7 +744,7 @@ const JobDetail = () => {
                         fullWidth
                         variant="outlined"
                         startIcon={<EmailIcon />}
-                        href={`mailto:${jobDetail.recruiterEmail}`}
+                        href={`mailto:${displayedJobDetail.recruiterEmail}`}
                         size="large"
                         sx={{ flex: "1 1 50%", order: { xs: 3, sm: 3 } }}
                       >
@@ -512,7 +767,11 @@ const JobDetail = () => {
                         fontWeight="medium"
                         align="right"
                       >
-                        {jobDetail.postedDate}
+                        {displayedJobDetail.createdAt
+                          ? new Date(
+                              displayedJobDetail.createdAt
+                            ).toLocaleDateString("vi-VN")
+                          : displayedJobDetail.postedDate || "Không xác định"}
                       </Typography>
                     </Grid>
 
@@ -527,7 +786,14 @@ const JobDetail = () => {
                         fontWeight="medium"
                         align="right"
                       >
-                        {jobDetail.deadline}
+                        {displayedJobDetail.deadline
+                          ? typeof displayedJobDetail.deadline === "string" &&
+                            displayedJobDetail.deadline.includes("T")
+                            ? new Date(
+                                displayedJobDetail.deadline
+                              ).toLocaleDateString("vi-VN")
+                            : displayedJobDetail.deadline
+                          : "Không có hạn"}
                       </Typography>
                     </Grid>
 
@@ -542,12 +808,11 @@ const JobDetail = () => {
                         fontWeight="medium"
                         align="right"
                       >
-                        {jobDetail.time}
+                        {displayedJobDetail.time}
                       </Typography>
                     </Grid>
                   </Grid>
                 </Paper>
-
               </Grid>
             </Grid>
           </Box>
@@ -638,8 +903,8 @@ const JobDetail = () => {
             }}
           >
             <Avatar
-              src={jobDetail.recruiterAvatar}
-              alt={jobDetail.recruiterName}
+              src={displayedJobDetail.recruiterAvatar}
+              alt={displayedJobDetail.recruiterName}
               sx={{
                 width: { xs: 70, sm: 50 },
                 height: { xs: 70, sm: 50 },
@@ -649,10 +914,10 @@ const JobDetail = () => {
             />
             <Box>
               <Typography variant="subtitle1" fontWeight="bold">
-                {jobDetail.recruiterName}
+                {displayedJobDetail.recruiterName}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {jobDetail.recruiterPosition}
+                {displayedJobDetail.recruiterPosition}
               </Typography>
             </Box>
           </Box>
@@ -767,7 +1032,7 @@ const JobDetail = () => {
           variant="filled"
           sx={{ width: "100%" }}
         >
-          Tin nhắn của bạn đã được gửi thành công đến nhà tuyển dụng!
+          {successMessage}
         </Alert>
       </Snackbar>
     </Box>

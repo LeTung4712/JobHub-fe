@@ -40,13 +40,21 @@ function ActivityChart() {
   const maxValue = Math.max(...data);
 
   return (
-    <Box sx={{ mt: 2, height: 120, display: "flex", alignItems: "flex-end" }}>
+    <Box
+      sx={{
+        mt: 2,
+        height: { xs: 100, sm: 120 },
+        display: "flex",
+        alignItems: "flex-end",
+        mx: { xs: -1, sm: 0 },
+      }}
+    >
       {data.map((value, index) => (
         <Box
           key={index}
           sx={{
             flex: 1,
-            mx: 0.5,
+            mx: { xs: 0.2, sm: 0.5 },
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -54,7 +62,7 @@ function ActivityChart() {
         >
           <Box
             sx={{
-              height: `${(value / maxValue) * 100}px`,
+              height: `${(value / maxValue) * 90}px`,
               width: "100%",
               bgcolor: theme.palette.primary.main,
               borderRadius: 1,
@@ -66,7 +74,11 @@ function ActivityChart() {
               },
             }}
           />
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            fontSize={{ xs: "0.6rem", sm: "0.75rem" }}
+          >
             {days[index]}
           </Typography>
         </Box>
@@ -214,193 +226,67 @@ function Dashboard() {
   return (
     <Box
       sx={{
-        py: 6,
+        py: { xs: 3, md: 6 },
         backgroundImage:
           "linear-gradient(to bottom, rgba(100, 108, 255, 0.04), rgba(100, 108, 255, 0.02))",
         minHeight: "100vh",
       }}
     >
       <Container maxWidth="xl">
-        <Typography
-          variant="h3"
-          component="h1"
-          gutterBottom
-          sx={{
-            fontWeight: "bold",
-            color: theme.palette.primary.dark,
-            mb: 2,
-          }}
-        >
-          Dashboard
-        </Typography>
-        <Typography
-          variant="body1"
-          color="text.secondary"
-          sx={{
-            mb: 4,
-            fontSize: "1.1rem",
-          }}
-        >
-          Chào mừng bạn đến với JobHub! Dưới đây là tổng quan về hoạt động của
-          bạn.
-        </Typography>
+        <Box sx={{ mb: { xs: 3, md: 5 }, maxWidth: "800px" }}>
+          <Typography
+            variant="h3"
+            component="h1"
+            gutterBottom
+            sx={{
+              fontWeight: "bold",
+              color: theme.palette.primary.dark,
+              mb: 2,
+              fontSize: { xs: "2rem", md: "3rem" },
+            }}
+          >
+            Dashboard
+          </Typography>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{
+              mb: 4,
+              fontSize: { xs: "1rem", md: "1.1rem" },
+              lineHeight: 1.6,
+            }}
+          >
+            Chào mừng bạn đến với JobHub! Dưới đây là tổng quan về hoạt động của
+            bạn.
+          </Typography>
+        </Box>
 
-        <Grid container spacing={3}>
-          {/* Stats Cards Row */}
-          <Grid item xs={12} md={3}>
+        <Grid container spacing={{ xs: 2, md: 3 }}>
+          {/* Stats Cards Row - Thông tin quan trọng được hiển thị ở hàng đầu tiên với kích thước nhỏ gọn */}
+          <Grid item xs={12} sm={6} md={4}>
             <Card
               elevation={3}
               sx={{
-                borderRadius: 3,
+                borderRadius: { xs: 2, md: 3 },
                 background: "white",
                 boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
                 height: "100%",
+                transition: "transform 0.2s",
+                "&:hover": {
+                  transform: "translateY(-5px)",
+                  boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
+                },
               }}
             >
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  <Avatar
-                    sx={{
-                      bgcolor: "primary.light",
-                      color: "primary.contrastText",
-                      mr: 2,
-                    }}
-                  >
-                    <BusinessCenterIcon />
-                  </Avatar>
-                  <Typography variant="h6" fontWeight={600}>
-                    Ứng tuyển
-                  </Typography>
-                </Box>
-                <Typography variant="h4" fontWeight={700} sx={{ mb: 1 }}>
-                  {stats.totalApplications}
-                </Typography>
-                <Box sx={{ mb: 1 }}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={
-                      (stats.acceptedApplications / stats.totalApplications) *
-                      100
-                    }
-                    sx={{ height: 10, borderRadius: 5 }}
-                  />
-                </Box>
-                <Grid container spacing={1}>
-                  <Grid item xs={4}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
-                        fontWeight={600}
-                        color="success.main"
-                      >
-                        {stats.acceptedApplications}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Chấp nhận
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={4}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
-                        fontWeight={600}
-                        color="warning.main"
-                      >
-                        {stats.pendingApplications}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Đang chờ
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={4}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
-                        fontWeight={600}
-                        color="error.main"
-                      >
-                        {stats.rejectedApplications}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Từ chối
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={3}>
-            <Card
-              elevation={3}
-              sx={{
-                borderRadius: 3,
-                background: "white",
-                boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
-                height: "100%",
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  <Avatar
-                    sx={{
-                      bgcolor: "success.light",
-                      color: "success.contrastText",
-                      mr: 2,
-                    }}
-                  >
-                    <VisibilityIcon />
-                  </Avatar>
-                  <Typography variant="h6" fontWeight={600}>
-                    Lượt xem hồ sơ
-                  </Typography>
-                </Box>
-                <Typography variant="h4" fontWeight={700} sx={{ mb: 1 }}>
-                  {stats.profileViews}
-                </Typography>
-                <ActivityChart />
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={3}>
-            <Card
-              elevation={3}
-              sx={{
-                borderRadius: 3,
-                background: "white",
-                boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
-                height: "100%",
-              }}
-            >
-              <CardContent>
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                 <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                   <Avatar
                     sx={{
                       bgcolor: "warning.light",
                       color: "warning.contrastText",
                       mr: 2,
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
                     }}
                   >
                     <MessageIcon />
@@ -423,7 +309,16 @@ function Dashboard() {
                 <Button
                   variant="outlined"
                   fullWidth
-                  sx={{ mt: 3 }}
+                  sx={{
+                    mt: 3,
+                    height: "40px",
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    "&:hover": {
+                      backgroundColor: "rgba(100, 108, 255, 0.08)",
+                    },
+                  }}
                   onClick={() => navigate("/messages")}
                 >
                   Xem tin nhắn
@@ -432,56 +327,149 @@ function Dashboard() {
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={3}>
+          {/* Thêm card thống kê về công việc */}
+          <Grid item xs={12} sm={6} md={4}>
             <Card
               elevation={3}
               sx={{
-                borderRadius: 3,
+                borderRadius: { xs: 2, md: 3 },
                 background: "white",
                 boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
                 height: "100%",
+                transition: "transform 0.2s",
+                "&:hover": {
+                  transform: "translateY(-5px)",
+                  boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
+                },
               }}
             >
-              <CardContent>
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
                 <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                   <Avatar
                     sx={{
-                      bgcolor: "info.light",
-                      color: "info.contrastText",
+                      bgcolor: "primary.light",
+                      color: "primary.contrastText",
                       mr: 2,
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
                     }}
                   >
                     <WorkIcon />
                   </Avatar>
                   <Typography variant="h6" fontWeight={600}>
-                    Bài đăng công việc
+                    Công việc
                   </Typography>
                 </Box>
-                <Typography variant="h4" fontWeight={700}>
-                  {stats.jobPosts}
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Typography variant="h4" fontWeight={700} sx={{ mr: 2 }}>
+                    {stats.jobPosts}
+                  </Typography>
+                  <Chip
+                    label="Bài đăng"
+                    size="small"
+                    color="primary"
+                    sx={{ fontWeight: 600 }}
+                  />
+                </Box>
                 <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
+                  variant="outlined"
                   fullWidth
-                  sx={{ mt: 3 }}
-                  onClick={() => navigate("/create-post")}
+                  sx={{
+                    mt: 3,
+                    height: "40px",
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    "&:hover": {
+                      backgroundColor: "rgba(100, 108, 255, 0.08)",
+                    },
+                  }}
+                  onClick={() => navigate("/posts")}
                 >
-                  Đăng bài mới
+                  Quản lý tin
                 </Button>
               </CardContent>
             </Card>
           </Grid>
 
-          {/* Recent Jobs */}
+          {/* Card công việc đã lưu */}
+          <Grid item xs={12} sm={6} md={4}>
+            <Card
+              elevation={3}
+              sx={{
+                borderRadius: { xs: 2, md: 3 },
+                background: "white",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+                height: "100%",
+                transition: "transform 0.2s",
+                "&:hover": {
+                  transform: "translateY(-5px)",
+                  boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
+                },
+              }}
+            >
+              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                  <Avatar
+                    sx={{
+                      bgcolor: "success.light",
+                      color: "success.contrastText",
+                      mr: 2,
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
+                    }}
+                  >
+                    <BookmarkIcon />
+                  </Avatar>
+                  <Typography variant="h6" fontWeight={600}>
+                    Bài đã lưu
+                  </Typography>
+                </Box>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Typography variant="h4" fontWeight={700} sx={{ mr: 2 }}>
+                    {stats.savedJobs}
+                  </Typography>
+                  <Chip
+                    label="Công việc"
+                    size="small"
+                    color="success"
+                    sx={{ fontWeight: 600 }}
+                  />
+                </Box>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    mt: 3,
+                    height: "40px",
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    "&:hover": {
+                      backgroundColor: "rgba(100, 108, 255, 0.08)",
+                    },
+                  }}
+                  onClick={() => navigate("/profile")}
+                >
+                  Xem đã lưu
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Recent Jobs - Đặt bên trái với tỷ lệ md=6 */}
           <Grid item xs={12} md={6}>
             <Paper
               elevation={3}
               sx={{
-                borderRadius: 3,
-                p: 3,
+                borderRadius: { xs: 2, md: 3 },
+                p: { xs: 2, md: 3 },
                 background: "white",
                 boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+                mb: { xs: 2, md: 0 },
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
               }}
             >
               <Box
@@ -498,13 +486,25 @@ function Dashboard() {
                 <Button
                   variant="text"
                   onClick={() => navigate("/posts")}
-                  sx={{ textTransform: "none" }}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 500,
+                    borderRadius: "8px",
+                    px: 2,
+                  }}
                 >
                   Xem tất cả
                 </Button>
               </Box>
 
-              <List sx={{ p: 0 }}>
+              <List
+                sx={{
+                  p: 0,
+                  flex: 1,
+                  overflow: "auto",
+                  maxHeight: { xs: "300px", md: "300px" },
+                }}
+              >
                 {recentJobs.map((job, index) => (
                   <React.Fragment key={job.id}>
                     <ListItem
@@ -512,21 +512,45 @@ function Dashboard() {
                         px: 2,
                         py: 1.5,
                         borderRadius: 2,
+                        flexDirection: { xs: "column", sm: "row" },
+                        alignItems: { xs: "flex-start", sm: "center" },
                         "&:hover": {
                           bgcolor: "rgba(0, 0, 0, 0.03)",
                         },
+                        transition: "background 0.2s",
                       }}
                     >
-                      <ListItemAvatar>
-                        <Avatar
-                          src={job.logo}
-                          alt={job.company}
-                          sx={{ bgcolor: "primary.light" }}
-                        >
-                          {job.company.charAt(0)}
-                        </Avatar>
+                      <ListItemAvatar
+                        sx={{
+                          minWidth: { xs: "100%", sm: "auto" },
+                          mb: { xs: 1, sm: 0 },
+                        }}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <Avatar
+                            src={job.logo}
+                            alt={job.company}
+                            sx={{
+                              bgcolor: "primary.light",
+                              mr: 2,
+                              width: { xs: 40, md: 48 },
+                              height: { xs: 40, md: 48 },
+                            }}
+                          >
+                            {job.company.charAt(0)}
+                          </Avatar>
+                          <Box sx={{ display: { xs: "block", sm: "none" } }}>
+                            <Typography variant="body1" fontWeight={600}>
+                              {job.title}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {job.company}
+                            </Typography>
+                          </Box>
+                        </Box>
                       </ListItemAvatar>
                       <ListItemText
+                        sx={{ display: { xs: "none", sm: "block" } }}
                         primary={
                           <Typography variant="body1" fontWeight={600}>
                             {job.title}
@@ -552,7 +576,26 @@ function Dashboard() {
                           </React.Fragment>
                         }
                       />
-                      <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        component="div"
+                        sx={{
+                          display: { xs: "block", sm: "none" },
+                          mb: 1,
+                        }}
+                      >
+                        {job.applications} ứng viên • Đăng ngày: {job.date}
+                      </Typography>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        sx={{
+                          mt: { xs: 1, sm: 0 },
+                          alignSelf: { xs: "flex-end", sm: "center" },
+                        }}
+                      >
                         <Chip
                           label={getStatusText(job.status)}
                           size="small"
@@ -560,11 +603,18 @@ function Dashboard() {
                             bgcolor: `${getStatusColor(job.status)}20`,
                             color: getStatusColor(job.status),
                             fontWeight: 600,
+                            px: 1,
                           }}
                         />
                         <IconButton
                           size="small"
-                          onClick={() => navigate(`/job/${job.id}`)}
+                          onClick={() => navigate(`/jobs/${job.id}`)}
+                          sx={{
+                            bgcolor: "rgba(0, 0, 0, 0.04)",
+                            "&:hover": {
+                              bgcolor: "rgba(0, 0, 0, 0.08)",
+                            },
+                          }}
                         >
                           <VisibilityIcon fontSize="small" />
                         </IconButton>
@@ -578,14 +628,33 @@ function Dashboard() {
               </List>
 
               {recentJobs.length === 0 && (
-                <Box sx={{ textAlign: "center", py: 3 }}>
-                  <Typography variant="body1" color="text.secondary">
+                <Box
+                  sx={{
+                    textAlign: "center",
+                    py: 3,
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Typography
+                    variant="body1"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
                     Bạn chưa đăng tin tuyển dụng nào
                   </Typography>
                   <Button
                     variant="contained"
-                    sx={{ mt: 2 }}
-                    onClick={() => navigate("/create-post")}
+                    sx={{
+                      mt: 1,
+                      alignSelf: "center",
+                      borderRadius: "8px",
+                      textTransform: "none",
+                      px: 3,
+                    }}
+                    onClick={() => navigate("/posts/create")}
                   >
                     Đăng tin tuyển dụng
                   </Button>
@@ -594,15 +663,19 @@ function Dashboard() {
             </Paper>
           </Grid>
 
-          {/* Notifications */}
+          {/* Notifications - Đặt bên phải với tỷ lệ md=6 */}
           <Grid item xs={12} md={6}>
             <Paper
               elevation={3}
               sx={{
-                borderRadius: 3,
-                p: 3,
+                borderRadius: { xs: 2, md: 3 },
+                p: { xs: 2, md: 3 },
                 background: "white",
                 boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+                mb: { xs: 2, md: 0 },
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
               }}
             >
               <Box
@@ -619,13 +692,25 @@ function Dashboard() {
                 <Button
                   variant="text"
                   onClick={() => {}}
-                  sx={{ textTransform: "none" }}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 500,
+                    borderRadius: "8px",
+                    px: 2,
+                  }}
                 >
                   Đánh dấu đã đọc
                 </Button>
               </Box>
 
-              <List sx={{ p: 0 }}>
+              <List
+                sx={{
+                  p: 0,
+                  flex: 1,
+                  overflow: "auto",
+                  maxHeight: { xs: "300px", md: "300px" },
+                }}
+              >
                 {notifications.map((notification, index) => (
                   <React.Fragment key={notification.id}>
                     <ListItem
@@ -639,9 +724,10 @@ function Dashboard() {
                         "&:hover": {
                           bgcolor: "rgba(0, 0, 0, 0.03)",
                         },
+                        transition: "background 0.2s",
                       }}
                     >
-                      <ListItemIcon>
+                      <ListItemIcon sx={{ minWidth: { xs: 40, sm: 56 } }}>
                         <Avatar
                           sx={{
                             bgcolor: notification.read
@@ -672,7 +758,15 @@ function Dashboard() {
                           </Typography>
                         }
                       />
-                      <IconButton size="small">
+                      <IconButton
+                        size="small"
+                        sx={{
+                          bgcolor: "rgba(0, 0, 0, 0.04)",
+                          "&:hover": {
+                            bgcolor: "rgba(0, 0, 0, 0.08)",
+                          },
+                        }}
+                      >
                         <MoreVertIcon fontSize="small" />
                       </IconButton>
                     </ListItem>
@@ -684,7 +778,16 @@ function Dashboard() {
               </List>
 
               {notifications.length === 0 && (
-                <Box sx={{ textAlign: "center", py: 3 }}>
+                <Box
+                  sx={{
+                    textAlign: "center",
+                    py: 3,
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                  }}
+                >
                   <Typography variant="body1" color="text.secondary">
                     Bạn không có thông báo nào
                   </Typography>
@@ -693,15 +796,20 @@ function Dashboard() {
             </Paper>
           </Grid>
 
-          {/* Saved Jobs */}
-          <Grid item xs={12} md={6}>
+          {/* Activity Chart - Thêm biểu đồ hoạt động */}
+          <Grid item xs={12} md={8}>
             <Paper
               elevation={3}
               sx={{
-                borderRadius: 3,
-                p: 3,
+                borderRadius: { xs: 2, md: 3 },
+                p: { xs: 2, md: 3 },
                 background: "white",
                 boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+                transition: "transform 0.2s",
+                "&:hover": {
+                  transform: "translateY(-5px)",
+                  boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
+                },
               }}
             >
               <Box
@@ -713,30 +821,107 @@ function Dashboard() {
                 }}
               >
                 <Typography variant="h5" fontWeight={600}>
-                  Công việc đã lưu
+                  Hoạt động gần đây
+                </Typography>
+                <Chip
+                  label="Tuần này"
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  sx={{ fontWeight: 600 }}
+                />
+              </Box>
+
+              <ActivityChart />
+
+              <Box
+                sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Tổng tương tác: {stats.profileViews} lượt
                 </Typography>
                 <Button
                   variant="text"
-                  onClick={() => navigate("/saved-jobs")}
-                  sx={{ textTransform: "none" }}
+                  size="small"
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 500,
+                  }}
                 >
-                  Xem tất cả
+                  Xem chi tiết
                 </Button>
               </Box>
+            </Paper>
+          </Grid>
 
-              <Box sx={{ textAlign: "center", py: 3 }}>
-                <BookmarkIcon sx={{ fontSize: 60, color: "grey.300", mb: 2 }} />
-                <Typography variant="body1" color="text.secondary" gutterBottom>
-                  Bạn đã lưu {stats.savedJobs} công việc
-                </Typography>
+          {/* Quick Action - Thêm khu vực hành động nhanh */}
+          <Grid item xs={12} md={4}>
+            <Paper
+              elevation={3}
+              sx={{
+                borderRadius: { xs: 2, md: 3 },
+                p: { xs: 2, md: 3 },
+                background: "white",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+                transition: "transform 0.2s",
+                height: "100%",
+                "&:hover": {
+                  transform: "translateY(-5px)",
+                  boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
+                },
+              }}
+            >
+              <Typography variant="h5" fontWeight={600} sx={{ mb: 3 }}>
+                Hành động nhanh
+              </Typography>
+
+              <Stack spacing={2}>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  startIcon={<AddIcon />}
+                  sx={{
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    py: 1.5,
+                    bgcolor: "primary.main",
+                  }}
+                  onClick={() => navigate("/posts/create")}
+                >
+                  Đăng tin tuyển dụng mới
+                </Button>
+
                 <Button
                   variant="outlined"
-                  sx={{ mt: 2 }}
+                  fullWidth
+                  startIcon={<WorkIcon />}
+                  sx={{
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    py: 1.5,
+                  }}
                   onClick={() => navigate("/jobs")}
                 >
-                  Tìm kiếm thêm việc làm
+                  Tìm kiếm việc làm
                 </Button>
-              </Box>
+
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<MessageIcon />}
+                  sx={{
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    py: 1.5,
+                  }}
+                  onClick={() => navigate("/messages")}
+                >
+                  Kiểm tra tin nhắn
+                </Button>
+              </Stack>
             </Paper>
           </Grid>
         </Grid>

@@ -718,24 +718,38 @@ const JobDetail = () => {
                     ))}
                   </List>
 
-                  {/* Quyền lợi - chỉ hiển thị cho bài đăng tuyển dụng */}
-                  {displayedJobDetail.postType !== "seeking" && (
-                    <>
-                      <Typography variant="h6" gutterBottom fontWeight="bold">
-                        Quyền lợi
-                      </Typography>
-                      <List sx={{ pl: 2 }}>
-                        {displayedJobDetail.benefits.map((benefit, index) => (
-                          <ListItem key={index} disableGutters sx={{ py: 0.5 }}>
-                            <ListItemIcon sx={{ minWidth: 30 }}>
-                              <StarIcon color="primary" fontSize="small" />
-                            </ListItemIcon>
-                            <ListItemText primary={benefit} />
-                          </ListItem>
-                        ))}
-                      </List>
-                    </>
-                  )}
+                  {/* Quyền lợi/Mong muốn - hiển thị cho cả hai loại bài đăng */}
+                  {displayedJobDetail.benefits &&
+                    displayedJobDetail.benefits.length > 0 && (
+                      <>
+                        <Typography variant="h6" gutterBottom fontWeight="bold">
+                          {displayedJobDetail.postType === "seeking"
+                            ? "Mong muốn"
+                            : "Quyền lợi"}
+                        </Typography>
+                        <List sx={{ pl: 2 }}>
+                          {displayedJobDetail.benefits.map((benefit, index) => (
+                            <ListItem
+                              key={index}
+                              disableGutters
+                              sx={{ py: 0.5 }}
+                            >
+                              <ListItemIcon sx={{ minWidth: 30 }}>
+                                <StarIcon
+                                  color={
+                                    displayedJobDetail.postType === "seeking"
+                                      ? "secondary"
+                                      : "primary"
+                                  }
+                                  fontSize="small"
+                                />
+                              </ListItemIcon>
+                              <ListItemText primary={benefit} />
+                            </ListItem>
+                          ))}
+                        </List>
+                      </>
+                    )}
                 </Paper>
               </Grid>
             </Grid>

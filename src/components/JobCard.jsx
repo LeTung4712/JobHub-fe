@@ -10,21 +10,47 @@ import {
   Button,
   useTheme,
 } from "@mui/material";
-import BusinessIcon from "@mui/icons-material/Business";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import WorkHistoryIcon from "@mui/icons-material/WorkHistory";
+import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
 
 const JobCard = ({ job, onClick, getCategoryLabel, getCategoryColor }) => {
   const theme = useTheme();
+
+  // Mapping cho kinh nghiệm để hiển thị
+  const getExperienceLabel = (experienceCode) => {
+    const experienceMap = {
+      entry: "Mới đi làm",
+      junior: "1-2 năm",
+      mid: "3-5 năm",
+      senior: "5+ năm",
+      expert: "Chuyên gia",
+    };
+    return experienceMap[experienceCode] || "Không yêu cầu";
+  };
+
+  // Mapping cho loại hình công việc
+  const getJobTypeLabel = (typeCode) => {
+    const typeMap = {
+      "full-time": "Toàn thời gian",
+      "part-time": "Bán thời gian",
+      freelance: "Freelance",
+      contract: "Hợp đồng",
+      internship: "Thực tập",
+      remote: "Remote",
+    };
+    return typeMap[typeCode] || "Khác";
+  };
 
   return (
     <Card
       elevation={3}
       sx={{
-        height: { xs: 370, md: 350, xl: 350 },
-        minHeight: { xs: 370, md: 350, xl: 350 },
-        maxHeight: { xs: 370, md: 350, xl: 350 },
+        height: { xs: 420, md: 400, xl: 400 },
+        minHeight: { xs: 420, md: 400, xl: 400 },
+        maxHeight: { xs: 420, md: 400, xl: 400 },
         width: "100%",
         display: "flex",
         flexDirection: "column",
@@ -103,7 +129,7 @@ const JobCard = ({ job, onClick, getCategoryLabel, getCategoryColor }) => {
           </Typography>
         </Box>
 
-        <Stack spacing={1} sx={{ flexGrow: 1, minHeight: "7.5rem" }}>
+        <Stack spacing={1} sx={{ flexGrow: 1, minHeight: "11rem" }}>
           <Box
             sx={{
               display: "flex",
@@ -137,6 +163,31 @@ const JobCard = ({ job, onClick, getCategoryLabel, getCategoryColor }) => {
               height: "1.5rem",
             }}
           >
+            <WorkOutlineIcon
+              fontSize="small"
+              color="action"
+              sx={{ fontSize: "0.9rem", minWidth: "18px" }}
+            />
+            <Typography
+              variant="body2"
+              sx={{
+                fontSize: { xs: "0.85rem", lg: "0.8rem" },
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {getJobTypeLabel(job.type)}
+            </Typography>
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              height: "1.5rem",
+            }}
+          >
             <AttachMoneyIcon
               fontSize="small"
               color="action"
@@ -152,6 +203,31 @@ const JobCard = ({ job, onClick, getCategoryLabel, getCategoryColor }) => {
               }}
             >
               {job.salary}
+            </Typography>
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              height: "1.5rem",
+            }}
+          >
+            <WorkHistoryIcon
+              fontSize="small"
+              color="action"
+              sx={{ fontSize: "0.9rem", minWidth: "18px" }}
+            />
+            <Typography
+              variant="body2"
+              sx={{
+                fontSize: { xs: "0.85rem", lg: "0.8rem" },
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Kinh nghiệm: {getExperienceLabel(job.experience)}
             </Typography>
           </Box>
           <Box

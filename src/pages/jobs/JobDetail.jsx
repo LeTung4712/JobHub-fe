@@ -17,7 +17,6 @@ import {
   ListItemText,
   ListItemIcon,
   Avatar,
-  ListItemAvatar,
   IconButton,
   Tooltip,
   Snackbar,
@@ -31,7 +30,6 @@ import {
 import {
   ArrowBack as ArrowBackIcon,
   Send as SendIcon,
-  Business as BusinessIcon,
   LocationOn as LocationOnIcon,
   AttachMoney as AttachMoneyIcon,
   Work as WorkIcon,
@@ -42,19 +40,17 @@ import {
   Email as EmailIcon,
   Bookmark as BookmarkIcon,
   BookmarkBorder as BookmarkBorderIcon,
-  People as PeopleIcon,
-  Public as PublicIcon,
-  AttachFile as AttachFileIcon,
-  InsertEmoticon as EmojiIcon,
   Close as CloseIcon,
-  Check as CheckIcon,
-  Download as DownloadIcon,
   Description as DescriptionIcon,
   CalendarToday as CalendarTodayIcon,
   Event as EventIcon,
 } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
 import { getJob, downloadCV } from "../../api/jobs";
+import { useAuth } from "../../App";
+
+// Cache cho dữ liệu job
+const jobCache = new Map();
 
 // Kiểm tra đăng nhập
 const isAuthenticated = () => {
@@ -67,9 +63,10 @@ const JobDetail = () => {
   // Lấy ID từ URL
   const id = params.id; // id sẽ được tự động giải nén từ URL do cấu hình route
   const theme = useTheme();
+  const { user } = useAuth();
 
-  // Lấy ID người dùng hiện tại từ localStorage
-  const currentUserId = localStorage.getItem("userId");
+  // Lấy ID người dùng hiện tại từ context thay vì localStorage
+  const currentUserId = user?._id;
 
   // State để kiểm tra nếu bài đăng này thuộc về người dùng hiện tại
   const [isOwnPost, setIsOwnPost] = useState(false);
@@ -101,8 +98,6 @@ const JobDetail = () => {
   const [jobDetail, setJobDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [applied, setApplied] = useState(false);
-  const [applyLoading, setApplyLoading] = useState(false);
 
   // State cho tải xuống CV
   const [downloadingCV, setDownloadingCV] = useState(false);
@@ -129,6 +124,25 @@ const JobDetail = () => {
     const fetchJobDetail = async () => {
       setLoading(true);
       setError(null);
+
+      // Kiểm tra cache trước khi gọi API
+      if (jobCache.has(id)) {
+        const cachedJob = jobCache.get(id);
+        setJobDetail(cachedJob);
+
+        // Kiểm tra nếu người dùng hiện tại là tác giả của bài đăng
+        if (
+          currentUserId &&
+          cachedJob.author &&
+          cachedJob.author._id === currentUserId
+        ) {
+          setIsOwnPost(true);
+        }
+
+        setLoading(false);
+        return;
+      }
+
       try {
         const response = await getJob(id);
         if (response.success) {
@@ -170,20 +184,15 @@ const JobDetail = () => {
             experience: job.experience || "Không xác định",
             // Thông tin tác giả
             authorId: job.author?._id,
+            // CV file
+            cvFile: job.cvFile || null,
+            hasCv: !!job.cvFile,
           };
-          setJobDetail(processedJob);
 
-          // Kiểm tra xem người dùng đã ứng tuyển hay chưa
-          if (
-            job.applications &&
-            job.applications.some(
-              (app) =>
-                app.applicant &&
-                app.applicant._id === localStorage.getItem("userId")
-            )
-          ) {
-            setApplied(true);
-          }
+          // Lưu vào cache
+          jobCache.set(id, processedJob);
+
+          setJobDetail(processedJob);
         } else {
           setError(response.message || "Không thể tải thông tin công việc");
         }
@@ -196,7 +205,7 @@ const JobDetail = () => {
     };
 
     fetchJobDetail();
-  }, [id, currentUserId]);
+  }, [id]);
 
   // Dữ liệu chi tiết việc làm mẫu (sử dụng khi API chưa hoàn thiện)
   const sampleJobDetail = {
@@ -245,6 +254,10 @@ const JobDetail = () => {
 
   // Hàm xử lý mở/đóng dialog liên hệ
   const handleOpenContactDialog = () => {
+    if (!isAuthenticated()) {
+      navigate("/login");
+      return;
+    }
     // Không cho phép liên hệ với chính mình
     if (isOwnPost) {
       showSuccessMessage(
@@ -361,75 +374,6 @@ const JobDetail = () => {
     );
   };
 
-  // Hàm helper để hiển thị văn bản phù hợp dựa trên loại bài đăng
-  const getDisplayTextByPostType = (hiringText, seekingText) => {
-    return displayedJobDetail.postType === "seeking" ? seekingText : hiringText;
-  };
-
-  // Hàm xử lý ứng tuyển
-  const handleApply = async () => {
-    if (!isAuthenticated()) {
-      navigate("/login");
-      return;
-    }
-
-    // Không cho phép ứng tuyển vào bài đăng của chính mình
-    if (isOwnPost) {
-      showSuccessMessage(
-        getDisplayTextByPostType(
-          "Bạn không thể ứng tuyển vào bài đăng của chính mình",
-          "Bạn không thể mời phỏng vấn chính mình"
-        )
-      );
-      return;
-    }
-
-    if (applied) {
-      showSuccessMessage(
-        getDisplayTextByPostType(
-          "Bạn đã ứng tuyển vị trí này trước đó!",
-          "Bạn đã mời ứng viên này phỏng vấn trước đó!"
-        )
-      );
-      return;
-    }
-
-    try {
-      setApplyLoading(true);
-      // TODO: Thêm API ứng tuyển ở đây
-      // const response = await applyForJob(id);
-
-      // Giả lập thành công
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Ghi nhận ứng tuyển thành công
-      setApplied(true);
-
-      // Hiển thị thông báo thành công
-      showSuccessMessage(
-        getDisplayTextByPostType(
-          "Ứng tuyển thành công! Nhà tuyển dụng sẽ sớm liên hệ với bạn.",
-          "Đã gửi lời mời phỏng vấn thành công! Ứng viên sẽ sớm phản hồi."
-        )
-      );
-    } catch (err) {
-      console.error("Lỗi khi ứng tuyển:", err);
-      showSuccessMessage(
-        getDisplayTextByPostType(
-          "Đã xảy ra lỗi khi ứng tuyển. Vui lòng thử lại sau.",
-          "Đã xảy ra lỗi khi gửi lời mời. Vui lòng thử lại sau."
-        )
-      );
-    } finally {
-      setApplyLoading(false);
-    }
-  };
-
-  // Hàm xử lý đóng thông báo
-  const handleCloseAlert = () => {
-    setOpenSuccessAlert(false);
-  };
-
   // Hàm xử lý tải CV
   const handleDownloadCV = async () => {
     if (!isAuthenticated()) {
@@ -465,10 +409,20 @@ const JobDetail = () => {
       showSuccessMessage("Đã tải xuống CV thành công");
     } catch (error) {
       console.error("Lỗi khi tải CV:", error);
-      showSuccessMessage("Đã xảy ra lỗi khi tải CV");
+      showSuccessMessage("Đã xảy ra lỗi khi tải CV. Vui lòng thử lại sau.");
     } finally {
       setDownloadingCV(false);
     }
+  };
+
+  // Hàm helper để hiển thị văn bản phù hợp dựa trên loại bài đăng
+  const getDisplayTextByPostType = (hiringText, seekingText) => {
+    return displayedJobDetail.postType === "seeking" ? seekingText : hiringText;
+  };
+
+  // Hàm xử lý đóng thông báo
+  const handleCloseAlert = () => {
+    setOpenSuccessAlert(false);
   };
 
   // Hiển thị giao diện loading
@@ -544,10 +498,10 @@ const JobDetail = () => {
 
                     <Box>
                       {!isOwnPost ? (
-                      <Tooltip title={isSaved ? "Đã lưu" : "Lưu việc làm"}>
-                        <IconButton
-                          onClick={handleToggleSave}
-                          color={isSaved ? "primary" : "default"}
+                        <Tooltip title={isSaved ? "Đã lưu" : "Lưu việc làm"}>
+                          <IconButton
+                            onClick={handleToggleSave}
+                            color={isSaved ? "primary" : "default"}
                             disabled={saveLoading}
                           >
                             {saveLoading ? (
@@ -557,8 +511,8 @@ const JobDetail = () => {
                             ) : (
                               <BookmarkBorderIcon />
                             )}
-                        </IconButton>
-                      </Tooltip>
+                          </IconButton>
+                        </Tooltip>
                       ) : (
                         <Chip
                           label="Bài đăng của bạn"
@@ -618,7 +572,7 @@ const JobDetail = () => {
                     />
                     {displayedJobDetail.postType !== "seeking" &&
                       displayedJobDetail.deadline && (
-                    <Chip
+                        <Chip
                           icon={<EventIcon fontSize="small" />}
                           label={`Hạn nộp: ${
                             typeof displayedJobDetail.deadline === "string" &&
@@ -628,7 +582,7 @@ const JobDetail = () => {
                                 ).toLocaleDateString("vi-VN")
                               : displayedJobDetail.deadline
                           }`}
-                      variant="outlined"
+                          variant="outlined"
                           size="medium"
                           color="error"
                         />
@@ -637,10 +591,10 @@ const JobDetail = () => {
 
                   {/* Thông tin liên hệ */}
                   <Box
-                  sx={{
+                    sx={{
                       display: "flex",
                       alignItems: "center",
-                    mb: 3,
+                      mb: 3,
                       p: 2,
                       bgcolor: "rgba(0, 0, 0, 0.02)",
                       borderRadius: 1,
@@ -648,41 +602,41 @@ const JobDetail = () => {
                       gap: 2,
                     }}
                   >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
                         flex: 1,
-                    }}
-                  >
-                    <Avatar
+                      }}
+                    >
+                      <Avatar
                         src={displayedJobDetail.authorAvatar}
                         alt={displayedJobDetail.authorName}
-                      sx={{
+                        sx={{
                           width: { xs: 50, sm: 40 },
                           height: { xs: 50, sm: 40 },
                           mr: 2,
-                      }}
-                    />
-                    <Box>
-                      <Typography variant="subtitle1" fontWeight="bold">
+                        }}
+                      />
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight="bold">
                           {displayedJobDetail.authorName}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
                           {displayedJobDetail.authorPosition}
-                      </Typography>
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
 
-                  <Box
-                    sx={{
-                      display: "flex",
-                      gap: 2,
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 2,
                         flex: 1,
                         justifyContent: { xs: "center", sm: "flex-end" },
-                    }}
-                  >
-                    <Button
+                      }}
+                    >
+                      <Button
                         variant="outlined"
                         startIcon={<PhoneIcon />}
                         href={`tel:${displayedJobDetail.authorPhone}`}
@@ -698,14 +652,40 @@ const JobDetail = () => {
                       >
                         Gửi email
                       </Button>
-                            <Button
-                              variant="outlined"
+                      <Button
+                        variant="outlined"
                         startIcon={<ChatIcon />}
                         onClick={handleOpenContactDialog}
                         size="small"
                       >
                         Nhắn tin
-                            </Button>
+                      </Button>
+                      {/* Nút tải CV - chỉ hiển thị khi bài đăng là tìm việc và có CV */}
+                      {displayedJobDetail.postType === "seeking" &&
+                        displayedJobDetail.hasCv && (
+                          <Button
+                            variant="outlined"
+                            color="secondary"
+                            startIcon={
+                              downloadingCV ? (
+                                <CircularProgress size={20} color="secondary" />
+                              ) : (
+                                <DescriptionIcon />
+                              )
+                            }
+                            onClick={handleDownloadCV}
+                            size="small"
+                            disabled={downloadingCV}
+                            sx={{
+                              borderWidth: "1px",
+                              "&:hover": {
+                                backgroundColor: "rgba(156, 39, 176, 0.04)",
+                              },
+                            }}
+                          >
+                            Tải CV
+                          </Button>
+                        )}
                     </Box>
                   </Box>
 
@@ -716,17 +696,17 @@ const JobDetail = () => {
                     {displayedJobDetail.postType === "seeking"
                       ? "Mô tả hồ sơ"
                       : "Mô tả công việc"}
-                      </Typography>
+                  </Typography>
                   <Typography paragraph sx={{ lineHeight: 1.8 }}>
                     {displayedJobDetail.description}
-                      </Typography>
+                  </Typography>
 
                   {/* Yêu cầu */}
                   <Typography variant="h6" gutterBottom fontWeight="bold">
                     {displayedJobDetail.postType === "seeking"
                       ? "Kỹ năng"
                       : "Yêu cầu"}
-                      </Typography>
+                  </Typography>
                   <List sx={{ pl: 2 }}>
                     {displayedJobDetail.requirements.map((req, index) => (
                       <ListItem key={index} disableGutters sx={{ py: 0.5 }}>
@@ -743,7 +723,7 @@ const JobDetail = () => {
                     <>
                       <Typography variant="h6" gutterBottom fontWeight="bold">
                         Quyền lợi
-                          </Typography>
+                      </Typography>
                       <List sx={{ pl: 2 }}>
                         {displayedJobDetail.benefits.map((benefit, index) => (
                           <ListItem key={index} disableGutters sx={{ py: 0.5 }}>
@@ -754,8 +734,8 @@ const JobDetail = () => {
                           </ListItem>
                         ))}
                       </List>
-                      </>
-                    )}
+                    </>
+                  )}
                 </Paper>
               </Grid>
             </Grid>

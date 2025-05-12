@@ -112,31 +112,6 @@ const JobCard = ({ job, onClick, getCategoryLabel, getCategoryColor }) => {
               height: "1.5rem",
             }}
           >
-            <BusinessIcon
-              fontSize="small"
-              color="action"
-              sx={{ fontSize: "0.9rem", minWidth: "18px" }}
-            />
-            <Typography
-              variant="body2"
-              sx={{
-                fontSize: { xs: "0.85rem", lg: "0.8rem" },
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {job.company}
-            </Typography>
-          </Box>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              height: "1.5rem",
-            }}
-          >
             <LocationOnIcon
               fontSize="small"
               color="action"

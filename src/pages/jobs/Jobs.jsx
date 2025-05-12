@@ -48,6 +48,9 @@ import { useNavigate } from "react-router-dom";
 import { getJobs } from "../../api/jobs";
 import JobCard from "../../components/JobCard";
 
+// Cache cho danh sách công việc
+const jobsCache = new Map();
+
 function Jobs() {
   const [filterCategory, setFilterCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -71,22 +74,27 @@ function Jobs() {
 
   // Gọi API khi component mount hoặc khi bộ lọc thay đổi
   useEffect(() => {
-    fetchJobs();
-  }, [page, limit]);
-
-  // Kích hoạt tìm kiếm khi các bộ lọc thay đổi (có delay để tránh gọi API quá nhiều)
-  useEffect(() => {
     const timer = setTimeout(() => {
-      if (page === 1) {
-        // Nếu đang ở trang 1, chỉ cần gọi fetchJobs
-        fetchJobs();
-      } else {
-        // Nếu không ở trang 1, reset về trang 1 (sẽ trigger fetchJobs qua dependency)
-        setPage(1);
-      }
-    }, 500);
+      fetchJobs();
+    }, 1500);
 
     return () => clearTimeout(timer);
+  }, [
+    page,
+    limit,
+    filterCategory,
+    postType,
+    salaryRange,
+    postDate,
+    searchQuery,
+  ]);
+
+  // Reset lại trang khi bộ lọc thay đổi
+  useEffect(() => {
+    // Chỉ reset trang khi bộ lọc thay đổi và hiện tại đang không ở trang 1
+    if (page !== 1) {
+      setPage(1);
+    }
   }, [filterCategory, postType, salaryRange, postDate, searchQuery]);
 
   // Cập nhật số lượng bộ lọc đang kích hoạt
@@ -219,8 +227,6 @@ function Jobs() {
   const applyMobileFilters = () => {
     setMobileFiltersOpen(false);
     updateActiveFiltersCount();
-    setPage(1); // Reset về trang đầu tiên
-    fetchJobs();
   };
 
   // Cập nhật số lượng bộ lọc đang kích hoạt
@@ -237,14 +243,26 @@ function Jobs() {
 
   const getCategoryLabel = (category) => {
     switch (category) {
-      case "development":
-        return "Phát triển";
+      case "software":
+        return "Phát triển phần mềm";
       case "design":
         return "Thiết kế";
-      case "management":
-        return "Quản lý";
-      case "data":
-        return "Dữ liệu";
+      case "marketing":
+        return "Marketing";
+      case "project-management":
+        return "Quản lý dự án";
+      case "finance":
+        return "Kế toán & Tài chính";
+      case "customer-service":
+        return "Dịch vụ khách hàng";
+      case "sales":
+        return "Sales";
+      case "hr":
+        return "Nhân sự";
+      case "education":
+        return "Giáo dục";
+      case "other":
+        return "Khác";
       default:
         return category;
     }
@@ -252,14 +270,26 @@ function Jobs() {
 
   const getCategoryColor = (category) => {
     switch (category) {
-      case "development":
+      case "software":
         return "primary";
       case "design":
         return "secondary";
-      case "management":
+      case "marketing":
         return "success";
-      case "data":
+      case "project-management":
         return "info";
+      case "finance":
+        return "warning";
+      case "customer-service":
+        return "error";
+      case "sales":
+        return "primary";
+      case "hr":
+        return "secondary";
+      case "education":
+        return "success";
+      case "other":
+        return "default";
       default:
         return "default";
     }
@@ -324,7 +354,21 @@ function Jobs() {
         params.postDate = postDate;
       }
 
+      // Tạo cache key từ tham số API
+      const cacheKey = JSON.stringify(params);
+
+      // Kiểm tra cache
+      if (jobsCache.has(cacheKey)) {
+        console.log("Lấy dữ liệu từ cache cho danh sách công việc");
+        const cachedData = jobsCache.get(cacheKey);
+        setJobs(cachedData.jobs);
+        setTotalJobs(cachedData.total);
+        setLoading(false);
+        return;
+      }
+
       // Gọi API
+      console.log("Gọi API cho danh sách công việc với params:", params);
       const response = await getJobs(params);
 
       if (response.success) {
@@ -344,6 +388,12 @@ function Jobs() {
           // Format salary string nếu có salaryMin và salaryMax
           salary: formatSalaryDisplay(job),
         }));
+
+        // Lưu vào cache
+        jobsCache.set(cacheKey, {
+          jobs: processedJobs || [],
+          total: response.total || processedJobs.length || 0,
+        });
 
         setJobs(processedJobs || []);
         setTotalJobs(response.total || processedJobs.length || 0);
@@ -545,10 +595,20 @@ function Jobs() {
                     }
                   >
                     <MenuItem value="all">Tất cả</MenuItem>
-                    <MenuItem value="development">Phát triển</MenuItem>
+                    <MenuItem value="software">Phát triển phần mềm</MenuItem>
                     <MenuItem value="design">Thiết kế</MenuItem>
-                    <MenuItem value="management">Quản lý</MenuItem>
-                    <MenuItem value="data">Dữ liệu</MenuItem>
+                    <MenuItem value="marketing">Marketing</MenuItem>
+                    <MenuItem value="project-management">
+                      Quản lý dự án
+                    </MenuItem>
+                    <MenuItem value="finance">Kế toán & Tài chính</MenuItem>
+                    <MenuItem value="customer-service">
+                      Dịch vụ khách hàng
+                    </MenuItem>
+                    <MenuItem value="sales">Sales</MenuItem>
+                    <MenuItem value="hr">Nhân sự</MenuItem>
+                    <MenuItem value="education">Giáo dục</MenuItem>
+                    <MenuItem value="other">Khác</MenuItem>
                   </Select>
                 </FormControl>
 

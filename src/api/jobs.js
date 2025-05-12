@@ -114,6 +114,7 @@ export const downloadCV = async (fileId) => {
     const url = window.URL.createObjectURL(new Blob([response.data]));
     return url;
   } catch (error) {
+    console.error("Lỗi khi tải xuống CV:", error);
     throw error.response?.data || { error: "Đã xảy ra lỗi khi tải xuống CV" };
   }
 };

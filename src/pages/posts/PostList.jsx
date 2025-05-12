@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Container,
   Box,
@@ -21,13 +21,25 @@ import {
   Select,
   FormControl,
   InputLabel,
+  CircularProgress,
+  Alert,
+  Menu,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import PauseIcon from "@mui/icons-material/Pause";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import { useNavigate } from "react-router-dom";
+import { getMyJobs, deleteJob, updateJobStatus } from "../../api/jobs";
+import { useSnackbar } from "notistack";
 
 // Hàm để định dạng ngày tháng
 const formatDate = (dateString) => {
@@ -58,140 +70,98 @@ function PostList() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("newest");
   const [showFilters, setShowFilters] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    pages: 1,
+  });
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedPostId, setSelectedPostId] = useState(null);
 
   const theme = useTheme();
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
-  // Dữ liệu mẫu cho các bài đăng
-  const posts = [
-    {
-      id: 1,
-      title: "Frontend Developer",
-      company: "Công ty ABC",
-      location: "Hà Nội",
-      date: "2023-06-01",
-      deadline: "2023-07-15",
-      status: "active",
-      applicants: 12,
-      views: 145,
-      category: "software",
-    },
-    {
-      id: 2,
-      title: "UX/UI Designer",
-      company: "Công ty XYZ",
-      location: "Hồ Chí Minh",
-      date: "2023-05-20",
-      deadline: "2023-06-30",
-      status: "active",
-      applicants: 8,
-      views: 98,
-      category: "design",
-    },
-    {
-      id: 3,
-      title: "Product Manager",
-      company: "Công ty Tech Solutions",
-      location: "Đà Nẵng",
-      date: "2023-04-15",
-      deadline: "2023-05-15",
-      status: "expired",
-      applicants: 15,
-      views: 210,
-      category: "project-management",
-    },
-    {
-      id: 4,
-      title: "Java Developer",
-      company: "Công ty ABC",
-      location: "Hà Nội",
-      date: "2023-05-01",
-      deadline: "2023-06-01",
-      status: "expired",
-      applicants: 20,
-      views: 180,
-      category: "software",
-    },
-    {
-      id: 5,
-      title: "Marketing Specialist",
-      company: "Công ty Digital Marketing",
-      location: "Hồ Chí Minh",
-      date: "2023-06-10",
-      deadline: "2023-07-30",
-      status: "active",
-      applicants: 5,
-      views: 75,
-      category: "marketing",
-    },
-    {
-      id: 6,
-      title: "Data Analyst",
-      company: "Công ty Big Data",
-      location: "Hà Nội",
-      date: "2023-06-05",
-      deadline: "2023-07-20",
-      status: "draft",
-      applicants: 0,
-      views: 0,
-      category: "software",
-    },
-    {
-      id: 7,
-      title: "HR Manager",
-      company: "Công ty HR Solutions",
-      location: "Hồ Chí Minh",
-      date: "2023-05-15",
-      deadline: "2023-06-15",
-      status: "paused",
-      applicants: 7,
-      views: 120,
-      category: "hr",
-    },
-  ];
-
-  // Lọc bài đăng theo tab và từ khóa tìm kiếm
-  const filteredPosts = posts.filter((post) => {
-    const matchesTab =
-      tabValue === 0 || // Tất cả
-      (tabValue === 1 && post.status === "active") || // Đang hoạt động
-      (tabValue === 2 && post.status === "expired") || // Hết hạn
-      (tabValue === 3 && post.status === "draft") || // Bản nháp
-      (tabValue === 4 && post.status === "paused"); // Tạm dừng
-
-    const matchesSearch =
-      post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.location.toLowerCase().includes(searchTerm.toLowerCase());
-
-    return matchesTab && matchesSearch;
-  });
-
-  // Sắp xếp bài đăng
-  const sortedPosts = [...filteredPosts].sort((a, b) => {
-    switch (sortBy) {
-      case "newest":
-        return new Date(b.date) - new Date(a.date);
-      case "oldest":
-        return new Date(a.date) - new Date(b.date);
-      case "deadline":
-        return new Date(a.deadline) - new Date(b.deadline);
-      case "applicants":
-        return b.applicants - a.applicants;
-      case "views":
-        return b.views - a.views;
+  // Hàm để map giá trị tab sang status API
+  const getStatusByTab = (tabIndex) => {
+    switch (tabIndex) {
+      case 1:
+        return "active";
+      case 2:
+        return "expired";
+      case 3:
+        return "draft";
+      case 4:
+        return "paused";
       default:
-        return new Date(b.date) - new Date(a.date);
+        return "";
     }
-  });
+  };
 
-  // Phân trang
-  const postsPerPage = 5;
-  const totalPages = Math.ceil(sortedPosts.length / postsPerPage);
-  const paginatedPosts = sortedPosts.slice(
-    (page - 1) * postsPerPage,
-    page * postsPerPage
-  );
+  // Hàm để map giá trị sortBy sang tham số API
+  const getSortParam = (sortValue) => {
+    switch (sortValue) {
+      case "newest":
+        return "-createdAt";
+      case "oldest":
+        return "createdAt";
+      case "deadline":
+        return "deadline";
+      case "applicants":
+        return "-applications";
+      case "views":
+        return "-views";
+      default:
+        return "-createdAt";
+    }
+  };
+
+  // Hàm lấy dữ liệu các bài đăng
+  const fetchPosts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const params = {
+        page,
+        limit: 5,
+        sort: getSortParam(sortBy),
+      };
+
+      // Thêm status nếu không phải tab "Tất cả"
+      const status = getStatusByTab(tabValue);
+      if (status) {
+        params.status = status;
+      }
+
+      // Thêm từ khóa tìm kiếm nếu có
+      if (searchTerm.trim()) {
+        params.search = searchTerm;
+      }
+
+      const response = await getMyJobs(params);
+
+      setPosts(response.data);
+      setPagination({
+        total: response.total,
+        page: page,
+        pages: Math.ceil(response.total / 5),
+      });
+    } catch (err) {
+      console.error("Error fetching posts:", err);
+      setError("Đã xảy ra lỗi khi tải dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, tabValue, sortBy, searchTerm]);
+
+  // Gọi API khi các dependency thay đổi
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -206,9 +176,87 @@ function PostList() {
     setSortBy(event.target.value);
   };
 
-  const handleDeletePost = (id) => {
-    // Thực hiện xóa bài đăng (trong ứng dụng thực tế sẽ gọi API)
-    console.log("Deleting post with ID:", id);
+  const handleApplyClick = (jobId, jobTitle) => {
+    // Kiểm tra jobId và jobTitle
+    if (!jobId) {
+      console.error("ID công việc không hợp lệ");
+      return;
+    }
+
+    // Đặt giá trị mặc định nếu title không tồn tại
+    const title = jobTitle || "job-post";
+
+    try {
+      // Tạo slug an toàn từ tiêu đề
+      let slug = "";
+
+      try {
+        // Phương pháp 1: Sử dụng cách đơn giản, an toàn
+        slug = title
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, "") // Chỉ giữ chữ cái và số (không dấu)
+          .replace(/\s+/g, "-")
+          .replace(/-{2,}/g, "-")
+          .replace(/^-+|-+$/g, ""); // Loại bỏ dấu - ở đầu và cuối
+      } catch (e) {
+        console.warn("Lỗi khi tạo slug phương pháp 1:", e);
+        // Phương pháp 2: Nếu phương pháp 1 lỗi, tạo slug đơn giản
+        slug = "job-" + jobId;
+      }
+
+      // Đảm bảo slug không rỗng
+      if (!slug || slug.length === 0) {
+        slug = "job-" + jobId;
+      }
+
+      // Giới hạn độ dài để tránh URL quá dài
+      slug = slug.substring(0, 30);
+
+      // Thêm timeout nhỏ để tránh lỗi message channel
+      setTimeout(() => {
+        navigate(`/jobs/${slug}/${jobId}`);
+      }, 0);
+    } catch (error) {
+      console.error("Lỗi khi điều hướng:", error);
+      // Fallback an toàn nhất
+      window.location.href = `/jobs/${jobId}`;
+    }
+  };
+
+  const handleDeletePost = async (id) => {
+    try {
+      await deleteJob(id);
+      enqueueSnackbar("Xóa bài đăng thành công", { variant: "success" });
+      fetchPosts(); // Tải lại danh sách sau khi xóa
+    } catch (error) {
+      enqueueSnackbar("Lỗi khi xóa bài đăng", { variant: "error" });
+    }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    fetchPosts();
+  };
+
+  // Thêm chức năng thay đổi trạng thái
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await updateJobStatus(id, newStatus);
+      enqueueSnackbar("Cập nhật trạng thái thành công", { variant: "success" });
+      fetchPosts(); // Tải lại danh sách
+    } catch (error) {
+      enqueueSnackbar("Lỗi khi cập nhật trạng thái", { variant: "error" });
+    }
+  };
+
+  const handleMenuOpen = (event, postId) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedPostId(postId);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedPostId(null);
   };
 
   return (
@@ -239,24 +287,6 @@ function PostList() {
           >
             Quản lý bài đăng
           </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => navigate("/posts/create")}
-            sx={{
-              px: 3,
-              py: 1,
-              borderRadius: 2,
-              backgroundImage: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
-              transition: "all 0.3s ease",
-              "&:hover": {
-                transform: "translateY(-2px)",
-                boxShadow: "0 6px 15px rgba(0,0,0,0.2)",
-              },
-            }}
-          >
-            Đăng tin mới
-          </Button>
         </Box>
 
         <Card
@@ -279,26 +309,39 @@ function PostList() {
                 mb: 3,
               }}
             >
-              <TextField
-                placeholder="Tìm kiếm bài đăng..."
-                variant="outlined"
-                size="small"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                sx={{
-                  minWidth: { xs: "100%", sm: "300px" },
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 2,
-                  },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon color="primary" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
+              <form
+                onSubmit={handleSearch}
+                style={{ display: "flex", flexGrow: 1 }}
+              >
+                <TextField
+                  placeholder="Tìm kiếm bài đăng..."
+                  variant="outlined"
+                  size="small"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  sx={{
+                    flexGrow: 1,
+                    minWidth: { xs: "100%", sm: "300px" },
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon color="primary" />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Button type="submit" size="small">
+                          Tìm
+                        </Button>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </form>
               <Box sx={{ display: "flex", gap: 2 }}>
                 <IconButton
                   onClick={() => setShowFilters(!showFilters)}
@@ -362,11 +405,19 @@ function PostList() {
 
             <Divider sx={{ mb: 3 }} />
 
-            {paginatedPosts.length > 0 ? (
+            {loading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
+                <CircularProgress />
+              </Box>
+            ) : error ? (
+              <Box sx={{ py: 3 }}>
+                <Alert severity="error">{error}</Alert>
+              </Box>
+            ) : posts.length > 0 ? (
               <>
                 <Grid container spacing={3}>
-                  {paginatedPosts.map((post) => (
-                    <Grid item xs={12} key={post.id}>
+                  {posts.map((post) => (
+                    <Grid item xs={12} key={post._id}>
                       <Card
                         variant="outlined"
                         sx={{
@@ -419,7 +470,7 @@ function PostList() {
                                 variant="body2"
                                 color="text.secondary"
                               >
-                                Ngày đăng: {formatDate(post.date)}
+                                Ngày đăng: {formatDate(post.createdAt)}
                               </Typography>
                             </Box>
 
@@ -434,7 +485,9 @@ function PostList() {
                                   color: theme.palette.primary.main,
                                 },
                               }}
-                              onClick={() => navigate(`/jobs/${post.id}`)}
+                              onClick={() =>
+                                handleApplyClick(post._id, post.title)
+                              }
                             >
                               {post.title}
                             </Typography>
@@ -464,7 +517,9 @@ function PostList() {
                                 color="text.secondary"
                               >
                                 <strong>Hạn nộp:</strong>{" "}
-                                {formatDate(post.deadline)}
+                                {post.deadline
+                                  ? formatDate(post.deadline)
+                                  : "Không có"}
                               </Typography>
                             </Box>
 
@@ -483,7 +538,7 @@ function PostList() {
                                     mr: 1,
                                   }}
                                 >
-                                  {post.applicants}
+                                  {post.applications?.length || 0}
                                 </Avatar>
                                 <Typography
                                   variant="body2"
@@ -506,7 +561,7 @@ function PostList() {
                                     mr: 1,
                                   }}
                                 >
-                                  {post.views}
+                                  {post.views || 0}
                                 </Avatar>
                                 <Typography
                                   variant="body2"
@@ -540,7 +595,9 @@ function PostList() {
                               variant="outlined"
                               size="small"
                               startIcon={<EditIcon />}
-                              onClick={() => navigate(`/posts/edit/${post.id}`)}
+                              onClick={() =>
+                                navigate(`/posts/edit/${post._id}`)
+                              }
                               sx={{ borderRadius: 2 }}
                             >
                               Sửa
@@ -550,7 +607,7 @@ function PostList() {
                               color="error"
                               size="small"
                               startIcon={<DeleteOutlineIcon />}
-                              onClick={() => handleDeletePost(post.id)}
+                              onClick={() => handleDeletePost(post._id)}
                               sx={{ borderRadius: 2 }}
                             >
                               Xóa
@@ -560,11 +617,22 @@ function PostList() {
                               color="info"
                               size="small"
                               startIcon={<VisibilityIcon />}
-                              onClick={() => navigate(`/jobs/${post.id}`)}
+                              onClick={() => navigate(`/jobs/${post._id}`)}
                               sx={{ borderRadius: 2 }}
                             >
                               Xem
                             </Button>
+                            <IconButton
+                              size="small"
+                              aria-label="more"
+                              onClick={(e) => handleMenuOpen(e, post._id)}
+                              sx={{
+                                ml: { xs: 1, md: 0 },
+                                mt: { xs: 0, md: 1 },
+                              }}
+                            >
+                              <MoreVertIcon />
+                            </IconButton>
                           </Box>
                         </CardContent>
                       </Card>
@@ -574,8 +642,8 @@ function PostList() {
 
                 <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
                   <Pagination
-                    count={totalPages}
-                    page={page}
+                    count={pagination.pages}
+                    page={pagination.page}
                     onChange={handlePageChange}
                     color="primary"
                     shape="rounded"
@@ -602,6 +670,81 @@ function PostList() {
             )}
           </CardContent>
         </Card>
+
+        {/* Menu thay đổi trạng thái */}
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleMenuClose}
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "right",
+          }}
+          transformOrigin={{
+            vertical: "top",
+            horizontal: "right",
+          }}
+        >
+          <MenuItem
+            onClick={() => {
+              handleStatusChange(selectedPostId, "active");
+              handleMenuClose();
+            }}
+            disabled={
+              posts.find((p) => p._id === selectedPostId)?.status === "active"
+            }
+          >
+            <ListItemIcon>
+              <PlayArrowIcon fontSize="small" color="success" />
+            </ListItemIcon>
+            <ListItemText>Đặt là Đang hoạt động</ListItemText>
+          </MenuItem>
+
+          <MenuItem
+            onClick={() => {
+              handleStatusChange(selectedPostId, "paused");
+              handleMenuClose();
+            }}
+            disabled={
+              posts.find((p) => p._id === selectedPostId)?.status === "paused"
+            }
+          >
+            <ListItemIcon>
+              <PauseIcon fontSize="small" color="warning" />
+            </ListItemIcon>
+            <ListItemText>Tạm dừng</ListItemText>
+          </MenuItem>
+
+          <MenuItem
+            onClick={() => {
+              handleStatusChange(selectedPostId, "expired");
+              handleMenuClose();
+            }}
+            disabled={
+              posts.find((p) => p._id === selectedPostId)?.status === "expired"
+            }
+          >
+            <ListItemIcon>
+              <HourglassEmptyIcon fontSize="small" color="error" />
+            </ListItemIcon>
+            <ListItemText>Đánh dấu Hết hạn</ListItemText>
+          </MenuItem>
+
+          <MenuItem
+            onClick={() => {
+              handleStatusChange(selectedPostId, "draft");
+              handleMenuClose();
+            }}
+            disabled={
+              posts.find((p) => p._id === selectedPostId)?.status === "draft"
+            }
+          >
+            <ListItemIcon>
+              <CheckCircleIcon fontSize="small" color="info" />
+            </ListItemIcon>
+            <ListItemText>Lưu là Bản nháp</ListItemText>
+          </MenuItem>
+        </Menu>
       </Container>
     </Box>
   );

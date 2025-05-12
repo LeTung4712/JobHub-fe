@@ -238,7 +238,6 @@ function Home() {
               backgroundImage: `url(${featureBgImage})`,
               backgroundSize: "cover",
               backgroundPosition: "center",
-              opacity: 0.6,
               zIndex: 0,
             },
           }}

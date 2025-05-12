@@ -90,9 +90,9 @@ export const deleteJob = async (jobId) => {
 };
 
 // Lấy danh sách công việc của người dùng hiện tại
-export const getMyJobs = async () => {
+export const getMyJobs = async (params) => {
   try {
-    const response = await api.get("/jobs/my-jobs");
+    const response = await api.get("/jobs/my-jobs", { params });
     return response.data;
   } catch (error) {
     throw (
@@ -115,5 +115,19 @@ export const downloadCV = async (fileId) => {
     return url;
   } catch (error) {
     throw error.response?.data || { error: "Đã xảy ra lỗi khi tải xuống CV" };
+  }
+};
+
+// Cập nhật trạng thái công việc
+export const updateJobStatus = async (jobId, status) => {
+  try {
+    const response = await api.patch(`/jobs/${jobId}/status`, { status });
+    return response.data;
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        error: "Đã xảy ra lỗi khi cập nhật trạng thái công việc",
+      }
+    );
   }
 };

@@ -19,6 +19,8 @@ import {
   Alert,
   FormControlLabel,
   Switch,
+  CircularProgress,
+  Paper,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -29,13 +31,14 @@ import AttachMoneyOutlinedIcon from "@mui/icons-material/AttachMoneyOutlined";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { useNavigate, useParams } from "react-router-dom";
+import { getJob, updateJob, deleteJob, updateJobStatus } from "../../api/jobs";
+import { useSnackbar } from "notistack";
 
 function EditPost() {
   const { id } = useParams();
   const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
     title: "",
-    company: "",
     location: "",
     salary: "",
     category: "",
@@ -43,18 +46,22 @@ function EditPost() {
     experience: "",
     description: "",
     requirements: [],
+    benefits: [],
     deadline: null,
-    isActive: true,
+    status: "active",
   });
   const [requirementInput, setRequirementInput] = useState("");
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [benefitInput, setBenefitInput] = useState("");
+  const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const theme = useTheme();
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
-  // Mock categories and types (same as in CreatePost)
+  // Categories và types từ API
   const categories = [
     { label: "Phát triển phần mềm", value: "software" },
     { label: "Thiết kế", value: "design" },
@@ -85,37 +92,47 @@ function EditPost() {
     { label: "Chuyên gia", value: "expert" },
   ];
 
-  // Simulate fetching data for the specific post
   useEffect(() => {
-    // In a real app, you would fetch the data from an API
-    // For this example, we'll use mock data
-    const mockJob = {
-      id: id,
-      title: "Frontend Developer",
-      company: "Công ty ABC",
-      location: "Hà Nội",
-      salary: "15-25 triệu",
-      category: "software",
-      type: "full-time",
-      experience: "mid",
-      description:
-        "Chúng tôi đang tìm kiếm một Frontend Developer có kinh nghiệm để tham gia vào đội ngũ phát triển sản phẩm của công ty. Bạn sẽ có cơ hội làm việc với các công nghệ mới nhất và phát triển các tính năng mới cho sản phẩm của chúng tôi.",
-      requirements: [
-        "Có ít nhất 3 năm kinh nghiệm với JavaScript/TypeScript",
-        "Thành thạo React và Redux",
-        "Có kinh nghiệm với CSS preprocessors (SASS/LESS)",
-        "Hiểu biết về RESTful APIs và GraphQL",
-      ],
-      deadline: new Date(2023, 6, 30),
-      isActive: true,
+    const fetchJobData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await getJob(id);
+
+        if (response.success && response.data) {
+          const job = response.data;
+          setFormData({
+            title: job.title || "",
+            location: job.location || "",
+            salary: job.salary || "",
+            salaryMin: job.salaryMin || "",
+            salaryMax: job.salaryMax || "",
+            category: job.category || "",
+            type: job.type || "",
+            experience: job.experience || "",
+            description: job.description || "",
+            requirements: job.requirements || [],
+            benefits: job.benefits || [],
+            deadline: job.deadline ? new Date(job.deadline) : null,
+            status: job.status || "active",
+            postType: job.postType || "hiring",
+          });
+        } else {
+          throw new Error("Không thể lấy thông tin công việc");
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy dữ liệu công việc:", error);
+        enqueueSnackbar("Không thể tải thông tin công việc", {
+          variant: "error",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    // Simulate API call delay
-    setTimeout(() => {
-      setFormData(mockJob);
-      setIsLoading(false);
-    }, 500);
-  }, [id]);
+    if (id) {
+      fetchJobData();
+    }
+  }, [id, enqueueSnackbar]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -125,11 +142,25 @@ function EditPost() {
     }));
   };
 
-  const handleStatusChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      isActive: e.target.checked,
-    }));
+  const handleStatusChange = async (e) => {
+    const newStatus = e.target.checked ? "active" : "paused";
+    try {
+      setFormData((prev) => ({
+        ...prev,
+        status: newStatus,
+      }));
+      await updateJobStatus(id, newStatus);
+      enqueueSnackbar(
+        `Đã ${newStatus === "active" ? "kích hoạt" : "tạm dừng"} công việc`,
+        { variant: "success" }
+      );
+    } catch (error) {
+      setFormData((prev) => ({
+        ...prev,
+        status: prev.status === "active" ? "paused" : "active",
+      }));
+      enqueueSnackbar("Không thể cập nhật trạng thái", { variant: "error" });
+    }
   };
 
   const handleDeadlineChange = (date) => {
@@ -156,131 +187,113 @@ function EditPost() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const addBenefit = () => {
+    if (benefitInput.trim() !== "") {
+      setFormData((prev) => ({
+        ...prev,
+        benefits: [...prev.benefits, benefitInput.trim()],
+      }));
+      setBenefitInput("");
+    }
+  };
+
+  const removeBenefit = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      benefits: prev.benefits.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validate form
-    if (
-      !formData.title ||
-      !formData.company ||
-      !formData.location ||
-      !formData.category ||
-      !formData.type ||
-      !formData.description
-    ) {
+    if (!formData.title || !formData.location || !formData.category || !formData.type || !formData.description) {
       setSubmitError(true);
+      setErrorMessage("Vui lòng điền đầy đủ các trường bắt buộc");
       setTimeout(() => setSubmitError(false), 5000);
       return;
     }
 
-    // Submit form (would be an API call in a real app)
-    console.log("Updating job post:", formData);
-
-    // Show success message
-    setSubmitSuccess(true);
-    setTimeout(() => {
-      setSubmitSuccess(false);
-      navigate("/dashboard"); // Redirect to dashboard after successful submit
-    }, 3000);
+    try {
+      setSubmitLoading(true);
+      const jobData = {
+        ...formData,
+        deadline: formData.deadline ? formData.deadline.toISOString() : null,
+      };
+      const response = await updateJob(id, jobData);
+      if (response.success) {
+        enqueueSnackbar("Cập nhật công việc thành công", { variant: "success" });
+        setTimeout(() => navigate("/posts"), 1500);
+      } else {
+        throw new Error(response.message || "Cập nhật không thành công");
+      }
+    } catch (error) {
+      console.error("Lỗi khi cập nhật công việc:", error);
+      setSubmitError(true);
+      setErrorMessage(error.message || "Đã xảy ra lỗi khi cập nhật công việc");
+      setTimeout(() => setSubmitError(false), 5000);
+    } finally {
+      setSubmitLoading(false);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteConfirm) {
       setDeleteConfirm(true);
       return;
     }
 
-    // Delete job post (would be an API call in a real app)
-    console.log("Deleting job post:", id);
-
-    // Redirect to dashboard
-    navigate("/dashboard");
+    try {
+      setSubmitLoading(true);
+      await deleteJob(id);
+      enqueueSnackbar("Xóa công việc thành công", { variant: "success" });
+      navigate("/posts");
+    } catch (error) {
+      console.error("Lỗi khi xóa công việc:", error);
+      enqueueSnackbar("Không thể xóa công việc", { variant: "error" });
+    } finally {
+      setSubmitLoading(false);
+    }
   };
 
   return (
     <Box
       sx={{
         py: 6,
-        backgroundImage:
-          "linear-gradient(to bottom, rgba(100, 108, 255, 0.04), rgba(100, 108, 255, 0.02))",
+        backgroundImage: "linear-gradient(to bottom, rgba(100, 108, 255, 0.04), rgba(100, 108, 255, 0.02))",
         minHeight: "100vh",
       }}
     >
       <Container maxWidth="lg">
-        <Box
-          sx={{
-            mb: 5,
-            textAlign: "center",
-            maxWidth: "800px",
-            mx: "auto",
-          }}
-        >
-          <Typography
-            variant="h3"
-            component="h1"
-            gutterBottom
-            sx={{
-              fontWeight: "bold",
-              color: theme.palette.primary.dark,
-              mb: 2,
-            }}
-          >
+        <Paper elevation={0} sx={{ p: 4, mb: 4, borderRadius: 2 }}>
+          <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: "bold", color: theme.palette.primary.main }}>
             Chỉnh sửa bài đăng
           </Typography>
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{
-              mb: 4,
-              fontSize: "1.1rem",
-            }}
-          >
-            Cập nhật thông tin bài đăng tuyển dụng của bạn.
+          <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 4 }}>
+            Cập nhật thông tin bài đăng tuyển dụng của bạn
           </Typography>
-        </Box>
+        </Paper>
 
         {isLoading ? (
-          <Card
-            elevation={3}
-            sx={{
-              borderRadius: 3,
-              overflow: "hidden",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-              background: "white",
-              p: 4,
-              textAlign: "center",
-            }}
-          >
-            <Typography variant="h6">Đang tải thông tin bài đăng...</Typography>
+          <Card elevation={3} sx={{ borderRadius: 2, p: 4, textAlign: "center" }}>
+            <CircularProgress />
+            <Typography variant="h6" sx={{ mt: 2 }}>
+              Đang tải thông tin bài đăng...
+            </Typography>
           </Card>
         ) : (
-          <Card
-            elevation={3}
-            sx={{
-              borderRadius: 3,
-              overflow: "hidden",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-              background: "white",
-            }}
-          >
+          <Card elevation={3} sx={{ borderRadius: 2 }}>
             <CardContent sx={{ p: 4 }}>
               <Box component="form" onSubmit={handleSubmit} noValidate>
                 <Grid container spacing={3}>
                   <Grid item xs={12}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        mb: 2,
-                      }}
-                    >
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
                       <Typography variant="h5" fontWeight={600}>
                         Thông tin tuyển dụng
                       </Typography>
                       <FormControlLabel
                         control={
                           <Switch
-                            checked={formData.isActive}
+                            checked={formData.status === "active"}
                             onChange={handleStatusChange}
                             color="success"
                           />
@@ -288,14 +301,10 @@ function EditPost() {
                         label={
                           <Typography
                             variant="body2"
-                            color={
-                              formData.isActive
-                                ? "success.main"
-                                : "text.secondary"
-                            }
+                            color={formData.status === "active" ? "success.main" : "text.secondary"}
                             fontWeight={600}
                           >
-                            {formData.isActive ? "Đang hoạt động" : "Tạm ngưng"}
+                            {formData.status === "active" ? "Đang hoạt động" : "Tạm ngưng"}
                           </Typography>
                         }
                       />
@@ -326,19 +335,6 @@ function EditPost() {
                     <TextField
                       required
                       fullWidth
-                      id="company"
-                      name="company"
-                      label="Tên công ty"
-                      value={formData.company}
-                      onChange={handleInputChange}
-                      placeholder="Tên công ty của bạn"
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      required
-                      fullWidth
                       id="location"
                       name="location"
                       label="Địa điểm làm việc"
@@ -349,6 +345,25 @@ function EditPost() {
                         startAdornment: (
                           <InputAdornment position="start">
                             <LocationOnOutlinedIcon color="primary" />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      id="salary"
+                      name="salary"
+                      label="Mức lương"
+                      value={formData.salary}
+                      onChange={handleInputChange}
+                      placeholder="Ví dụ: 15-25 triệu, Thỏa thuận, ..."
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <AttachMoneyOutlinedIcon color="primary" />
                           </InputAdornment>
                         ),
                       }}
@@ -377,9 +392,7 @@ function EditPost() {
 
                   <Grid item xs={12} sm={6}>
                     <FormControl fullWidth required>
-                      <InputLabel id="type-label">
-                        Loại hình công việc
-                      </InputLabel>
+                      <InputLabel id="type-label">Loại hình công việc</InputLabel>
                       <Select
                         labelId="type-label"
                         id="type"
@@ -398,22 +411,23 @@ function EditPost() {
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      id="salary"
-                      name="salary"
-                      label="Mức lương"
-                      value={formData.salary}
-                      onChange={handleInputChange}
-                      placeholder="Ví dụ: 15-25 triệu, Thỏa thuận, ..."
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <AttachMoneyOutlinedIcon color="primary" />
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
+                    <FormControl fullWidth>
+                      <InputLabel id="experience-label">Kinh nghiệm</InputLabel>
+                      <Select
+                        labelId="experience-label"
+                        id="experience"
+                        name="experience"
+                        value={formData.experience}
+                        onChange={handleInputChange}
+                        label="Kinh nghiệm"
+                      >
+                        {experienceLevels.map((level) => (
+                          <MenuItem key={level.value} value={level.value}>
+                            {level.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </Grid>
 
                   <Grid item xs={12} sm={6}>
@@ -438,34 +452,11 @@ function EditPost() {
                     </LocalizationProvider>
                   </Grid>
 
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth>
-                      <InputLabel id="experience-label">Kinh nghiệm</InputLabel>
-                      <Select
-                        labelId="experience-label"
-                        id="experience"
-                        name="experience"
-                        value={formData.experience}
-                        onChange={handleInputChange}
-                        label="Kinh nghiệm"
-                      >
-                        {experienceLevels.map((level) => (
-                          <MenuItem key={level.value} value={level.value}>
-                            {level.label}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-
                   <Grid item xs={12}>
-                    <Divider sx={{ my: 2 }} />
+                    <Divider sx={{ my: 3 }} />
                     <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
                       Yêu cầu công việc
                     </Typography>
-                  </Grid>
-
-                  <Grid item xs={12}>
                     <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
                       <TextField
                         fullWidth
@@ -483,16 +474,48 @@ function EditPost() {
                         Thêm
                       </Button>
                     </Box>
-
-                    <Box
-                      sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 1 }}
-                    >
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                       {formData.requirements.map((req, index) => (
                         <Chip
                           key={index}
                           label={req}
                           onDelete={() => removeRequirement(index)}
                           color="primary"
+                          variant="outlined"
+                        />
+                      ))}
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 3 }} />
+                    <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
+                      Quyền lợi
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+                      <TextField
+                        fullWidth
+                        id="benefit-input"
+                        value={benefitInput}
+                        onChange={(e) => setBenefitInput(e.target.value)}
+                        label="Thêm quyền lợi"
+                        placeholder="Nhập quyền lợi và nhấn thêm"
+                      />
+                      <Button
+                        variant="contained"
+                        onClick={addBenefit}
+                        sx={{ px: 3 }}
+                      >
+                        Thêm
+                      </Button>
+                    </Box>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                      {formData.benefits.map((benefit, index) => (
+                        <Chip
+                          key={index}
+                          label={benefit}
+                          onDelete={() => removeBenefit(index)}
+                          color="success"
                           variant="outlined"
                         />
                       ))}
@@ -514,23 +537,10 @@ function EditPost() {
                     />
                   </Grid>
 
-                  <Grid item xs={12}>
-                    <Divider sx={{ my: 2 }} />
-                  </Grid>
-
-                  {submitSuccess && (
-                    <Grid item xs={12}>
-                      <Alert severity="success" sx={{ mb: 2 }}>
-                        Cập nhật bài đăng thành công! Bạn sẽ được chuyển hướng
-                        sau giây lát.
-                      </Alert>
-                    </Grid>
-                  )}
-
                   {submitError && (
                     <Grid item xs={12}>
                       <Alert severity="error" sx={{ mb: 2 }}>
-                        Vui lòng điền đầy đủ các trường bắt buộc.
+                        {errorMessage}
                       </Alert>
                     </Grid>
                   )}
@@ -538,21 +548,19 @@ function EditPost() {
                   {deleteConfirm && (
                     <Grid item xs={12}>
                       <Alert severity="warning" sx={{ mb: 2 }}>
-                        Bạn có chắc chắn muốn xóa bài đăng này? Hành động này
-                        không thể hoàn tác.
+                        Bạn có chắc chắn muốn xóa bài đăng này? Hành động này không thể hoàn tác.
                       </Alert>
                     </Grid>
                   )}
 
                   <Grid item xs={12}>
-                    <Box
-                      sx={{ display: "flex", justifyContent: "space-between" }}
-                    >
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}>
                       <Button
                         variant="outlined"
                         color="error"
                         startIcon={<DeleteOutlineIcon />}
                         onClick={handleDelete}
+                        disabled={submitLoading}
                       >
                         {deleteConfirm ? "Xác nhận xóa" : "Xóa bài đăng"}
                       </Button>
@@ -560,12 +568,18 @@ function EditPost() {
                       <Box sx={{ display: "flex", gap: 2 }}>
                         <Button
                           variant="outlined"
-                          onClick={() => navigate("/dashboard")}
+                          onClick={() => navigate("/posts")}
+                          disabled={submitLoading}
                         >
                           Hủy
                         </Button>
-                        <Button type="submit" variant="contained">
-                          Cập nhật
+                        <Button
+                          type="submit"
+                          variant="contained"
+                          disabled={submitLoading}
+                          startIcon={submitLoading ? <CircularProgress size={20} /> : null}
+                        >
+                          {submitLoading ? "Đang cập nhật..." : "Cập nhật"}
                         </Button>
                       </Box>
                     </Box>

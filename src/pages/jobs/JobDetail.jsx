@@ -50,6 +50,8 @@ import {
   Check as CheckIcon,
   Download as DownloadIcon,
   Description as DescriptionIcon,
+  CalendarToday as CalendarTodayIcon,
+  Event as EventIcon,
 } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
 import { getJob, downloadCV } from "../../api/jobs";
@@ -143,29 +145,23 @@ const JobDetail = () => {
             // Đảm bảo các trường cần thiết cho UI
             id: job._id || job.id,
             title: job.title || "Không có tiêu đề",
-            company: job.author?.company || job.company || "Không xác định",
             location: job.location || "Không xác định",
             salary:
               job.salary ||
               `${job.salaryMin || 0} - ${job.salaryMax || 0} triệu`,
-            time: job.workingTime || job.time || "Toàn thời gian",
+            time: job.type || "Toàn thời gian",
             description: job.description || "Không có mô tả",
             // Đảm bảo các mảng dữ liệu đều có giá trị để tránh lỗi map
             requirements: job.requirements || [],
             benefits: job.benefits || [],
-            // Thông tin công ty và nhà tuyển dụng
-            industry: job.industry || "Công nghệ thông tin",
-            companySize: job.companySize || "Không xác định",
-            website: job.website || "#",
-            companyDescription: job.companyDescription || "Không có thông tin",
-            // Thông tin liên hệ
-            recruiterName: job.author?.fullName || "Nhà tuyển dụng",
-            recruiterPosition: job.author?.currentPosition || "HR Manager",
-            recruiterAvatar:
+            // Thông tin tác giả
+            authorName: job.author?.fullName || "Nhà tuyển dụng",
+            authorPosition: job.author?.currentPosition || "HR Manager",
+            authorAvatar:
               job.author?.avatar ||
               "https://randomuser.me/api/portraits/men/32.jpg",
-            recruiterPhone: job.author?.phone || "Không có thông tin",
-            recruiterEmail: job.author?.email || "Không có thông tin",
+            authorPhone: job.author?.phone || "Không có thông tin",
+            authorEmail: job.author?.email || "Không có thông tin",
             // Thời gian
             createdAt: job.createdAt,
             deadline: job.deadline,
@@ -174,9 +170,6 @@ const JobDetail = () => {
             experience: job.experience || "Không xác định",
             // Thông tin tác giả
             authorId: job.author?._id,
-            // Thông tin CV nếu có
-            cvFile: job.cvFile || null,
-            hasCv: !!job.cvFile,
           };
           setJobDetail(processedJob);
 
@@ -237,12 +230,6 @@ const JobDetail = () => {
       "Đóng góp vào các dự án có tác động lớn",
       "Team building và các hoạt động công ty hàng quý",
     ],
-    companyLogo: "https://randomuser.me/api/portraits/men/1.jpg",
-    industry: "Công nghệ thông tin",
-    companySize: "50-100",
-    website: "https://techsolutions.vn",
-    companyDescription:
-      "Tech Solutions Vietnam là công ty công nghệ hàng đầu chuyên về các giải pháp phần mềm và dịch vụ IT. Chúng tôi cung cấp môi trường làm việc năng động, sáng tạo và nhiều cơ hội phát triển cho nhân viên.",
     recruiterName: "Nguyễn Văn A",
     recruiterPosition: "HR Manager",
     recruiterAvatar: "https://randomuser.me/api/portraits/men/32.jpg",
@@ -466,7 +453,7 @@ const JobDetail = () => {
       link.href = downloadUrl;
       link.setAttribute(
         "download",
-        `CV-${displayedJobDetail.recruiterName.replace(/\s+/g, "-")}.pdf`
+        `CV-${displayedJobDetail.authorName.replace(/\s+/g, "-")}.pdf`
       );
       document.body.appendChild(link);
       link.click();
@@ -536,6 +523,7 @@ const JobDetail = () => {
                     borderRadius: 2,
                   }}
                 >
+                  {/* Header với tiêu đề và nút lưu */}
                   <Box
                     sx={{
                       display: "flex",
@@ -556,10 +544,10 @@ const JobDetail = () => {
 
                     <Box>
                       {!isOwnPost ? (
-                        <Tooltip title={isSaved ? "Đã lưu" : "Lưu việc làm"}>
-                          <IconButton
-                            onClick={handleToggleSave}
-                            color={isSaved ? "primary" : "default"}
+                      <Tooltip title={isSaved ? "Đã lưu" : "Lưu việc làm"}>
+                        <IconButton
+                          onClick={handleToggleSave}
+                          color={isSaved ? "primary" : "default"}
                             disabled={saveLoading}
                           >
                             {saveLoading ? (
@@ -569,8 +557,8 @@ const JobDetail = () => {
                             ) : (
                               <BookmarkBorderIcon />
                             )}
-                          </IconButton>
-                        </Tooltip>
+                        </IconButton>
+                      </Tooltip>
                       ) : (
                         <Chip
                           label="Bài đăng của bạn"
@@ -582,6 +570,7 @@ const JobDetail = () => {
                     </Box>
                   </Box>
 
+                  {/* Thông tin cơ bản */}
                   <Box
                     sx={{
                       display: "flex",
@@ -591,13 +580,6 @@ const JobDetail = () => {
                       justifyContent: { xs: "center", sm: "flex-start" },
                     }}
                   >
-                    <Chip
-                      icon={<BusinessIcon fontSize="small" />}
-                      label={displayedJobDetail.company}
-                      variant="outlined"
-                      size="medium"
-                      clickable
-                    />
                     <Chip
                       icon={<LocationOnIcon fontSize="small" />}
                       label={displayedJobDetail.location}
@@ -616,24 +598,135 @@ const JobDetail = () => {
                       variant="outlined"
                       size="medium"
                     />
+                    <Chip
+                      icon={<StarIcon fontSize="small" />}
+                      label={displayedJobDetail.experience}
+                      variant="outlined"
+                      size="medium"
+                    />
+                    <Chip
+                      icon={<CalendarTodayIcon fontSize="small" />}
+                      label={
+                        displayedJobDetail.createdAt
+                          ? new Date(
+                              displayedJobDetail.createdAt
+                            ).toLocaleDateString("vi-VN")
+                          : displayedJobDetail.postedDate || "Không xác định"
+                      }
+                      variant="outlined"
+                      size="medium"
+                    />
+                    {displayedJobDetail.postType !== "seeking" &&
+                      displayedJobDetail.deadline && (
+                    <Chip
+                          icon={<EventIcon fontSize="small" />}
+                          label={`Hạn nộp: ${
+                            typeof displayedJobDetail.deadline === "string" &&
+                            displayedJobDetail.deadline.includes("T")
+                              ? new Date(
+                                  displayedJobDetail.deadline
+                                ).toLocaleDateString("vi-VN")
+                              : displayedJobDetail.deadline
+                          }`}
+                      variant="outlined"
+                          size="medium"
+                          color="error"
+                        />
+                      )}
+                  </Box>
+
+                  {/* Thông tin liên hệ */}
+                  <Box
+                  sx={{
+                      display: "flex",
+                      alignItems: "center",
+                    mb: 3,
+                      p: 2,
+                      bgcolor: "rgba(0, 0, 0, 0.02)",
+                      borderRadius: 1,
+                      flexDirection: { xs: "column", sm: "row" },
+                      gap: 2,
+                    }}
+                  >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                        flex: 1,
+                    }}
+                  >
+                    <Avatar
+                        src={displayedJobDetail.authorAvatar}
+                        alt={displayedJobDetail.authorName}
+                      sx={{
+                          width: { xs: 50, sm: 40 },
+                          height: { xs: 50, sm: 40 },
+                          mr: 2,
+                      }}
+                    />
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                          {displayedJobDetail.authorName}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                          {displayedJobDetail.authorPosition}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Box
+                    sx={{
+                      display: "flex",
+                      gap: 2,
+                        flex: 1,
+                        justifyContent: { xs: "center", sm: "flex-end" },
+                    }}
+                  >
+                    <Button
+                        variant="outlined"
+                        startIcon={<PhoneIcon />}
+                        href={`tel:${displayedJobDetail.authorPhone}`}
+                        size="small"
+                      >
+                        Gọi điện
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        startIcon={<EmailIcon />}
+                        href={`mailto:${displayedJobDetail.authorEmail}`}
+                        size="small"
+                      >
+                        Gửi email
+                      </Button>
+                            <Button
+                              variant="outlined"
+                        startIcon={<ChatIcon />}
+                        onClick={handleOpenContactDialog}
+                        size="small"
+                      >
+                        Nhắn tin
+                            </Button>
+                    </Box>
                   </Box>
 
                   <Divider sx={{ my: 3 }} />
 
+                  {/* Mô tả công việc */}
                   <Typography variant="h6" gutterBottom fontWeight="bold">
                     {displayedJobDetail.postType === "seeking"
                       ? "Mô tả hồ sơ"
                       : "Mô tả công việc"}
-                  </Typography>
+                      </Typography>
                   <Typography paragraph sx={{ lineHeight: 1.8 }}>
                     {displayedJobDetail.description}
-                  </Typography>
+                      </Typography>
 
+                  {/* Yêu cầu */}
                   <Typography variant="h6" gutterBottom fontWeight="bold">
                     {displayedJobDetail.postType === "seeking"
                       ? "Kỹ năng"
                       : "Yêu cầu"}
-                  </Typography>
+                      </Typography>
                   <List sx={{ pl: 2 }}>
                     {displayedJobDetail.requirements.map((req, index) => (
                       <ListItem key={index} disableGutters sx={{ py: 0.5 }}>
@@ -645,12 +738,12 @@ const JobDetail = () => {
                     ))}
                   </List>
 
-                  {/* Chỉ hiển thị phần quyền lợi cho bài đăng tuyển dụng */}
+                  {/* Quyền lợi - chỉ hiển thị cho bài đăng tuyển dụng */}
                   {displayedJobDetail.postType !== "seeking" && (
                     <>
                       <Typography variant="h6" gutterBottom fontWeight="bold">
                         Quyền lợi
-                      </Typography>
+                          </Typography>
                       <List sx={{ pl: 2 }}>
                         {displayedJobDetail.benefits.map((benefit, index) => (
                           <ListItem key={index} disableGutters sx={{ py: 0.5 }}>
@@ -661,426 +754,8 @@ const JobDetail = () => {
                           </ListItem>
                         ))}
                       </List>
-                    </>
-                  )}
-                </Paper>
-
-                {/* Thông tin công ty hoặc người tìm việc */}
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: { xs: 2, sm: 3 },
-                    mb: 3,
-                    border: "1px solid rgba(0, 0, 0, 0.1)",
-                    borderRadius: 2,
-                  }}
-                >
-                  <Typography variant="h6" fontWeight="bold" gutterBottom>
-                    {displayedJobDetail.postType === "seeking"
-                      ? "Thông tin ứng viên"
-                      : "Về công ty"}
-                  </Typography>
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      mb: 2,
-                      flexDirection: { xs: "column", sm: "row" },
-                      textAlign: { xs: "center", sm: "left" },
-                    }}
-                  >
-                    <Avatar
-                      src={
-                        displayedJobDetail.companyLogo ||
-                        displayedJobDetail.recruiterAvatar
-                      }
-                      alt={displayedJobDetail.company}
-                      sx={{
-                        width: { xs: 80, sm: 70 },
-                        height: { xs: 80, sm: 70 },
-                        mr: { xs: 0, sm: 2 },
-                        mb: { xs: 2, sm: 0 },
-                      }}
-                    />
-                    <Box>
-                      <Typography variant="h6">
-                        {displayedJobDetail.postType === "seeking"
-                          ? displayedJobDetail.recruiterName
-                          : displayedJobDetail.company}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {displayedJobDetail.postType === "seeking"
-                          ? displayedJobDetail.recruiterPosition ||
-                            "Ứng viên tìm việc"
-                          : displayedJobDetail.industry}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  <Typography paragraph sx={{ lineHeight: 1.7 }}>
-                    {displayedJobDetail.companyDescription}
-                  </Typography>
-
-                  {displayedJobDetail.postType !== "seeking" && (
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: 1,
-                        justifyContent: { xs: "center", sm: "flex-start" },
-                      }}
-                    >
-                      <Chip
-                        icon={<PeopleIcon />}
-                        label={`${displayedJobDetail.companySize} nhân viên`}
-                        variant="outlined"
-                      />
-                      <Chip
-                        icon={<PublicIcon />}
-                        label={displayedJobDetail.website}
-                        variant="outlined"
-                        component="a"
-                        href={
-                          displayedJobDetail.website.startsWith("http")
-                            ? displayedJobDetail.website
-                            : `https://${displayedJobDetail.website}`
-                        }
-                        target="_blank"
-                        clickable
-                      />
-                    </Box>
-                  )}
-                </Paper>
-              </Grid>
-
-              {/* Sidebar - Thông tin nhà tuyển dụng và các hành động */}
-              <Grid item xs={12} md={4}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: { xs: 2, sm: 3 },
-                    mb: 3,
-                    border: "1px solid rgba(0, 0, 0, 0.1)",
-                    borderRadius: 2,
-                    position: { xs: "static", md: "sticky" },
-                    top: 20,
-                  }}
-                >
-                  <Typography variant="h6" fontWeight="bold" gutterBottom>
-                    {isOwnPost
-                      ? "Bài đăng của bạn"
-                      : getDisplayTextByPostType(
-                          "Liên hệ nhà tuyển dụng",
-                          "Liên hệ ứng viên"
-                        )}
-                  </Typography>
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      mb: 3,
-                      flexDirection: { xs: "column", sm: "row" },
-                      textAlign: { xs: "center", sm: "left" },
-                    }}
-                  >
-                    <Avatar
-                      src={displayedJobDetail.recruiterAvatar}
-                      alt={displayedJobDetail.recruiterName}
-                      sx={{
-                        width: { xs: 80, sm: 60 },
-                        height: { xs: 80, sm: 60 },
-                        mr: { xs: 0, sm: 2 },
-                        mb: { xs: 2, sm: 0 },
-                      }}
-                    />
-                    <Box>
-                      <Typography variant="subtitle1" fontWeight="bold">
-                        {displayedJobDetail.recruiterName}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {displayedJobDetail.postType === "seeking"
-                          ? displayedJobDetail.recruiterPosition ||
-                            "Ứng viên tìm việc"
-                          : displayedJobDetail.recruiterPosition}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  <Divider sx={{ mb: 3 }} />
-
-                  {isOwnPost ? (
-                    // Hiển thị khi người dùng xem bài đăng của chính mình
-                    <Box>
-                      <Alert severity="info" sx={{ mb: 3 }}>
-                        Đây là bài đăng do bạn tạo. Bạn có thể chỉnh sửa hoặc
-                        xóa bài đăng này từ trang Quản lý.
-                      </Alert>
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        color="primary"
-                        onClick={() => navigate("/dashboard")}
-                        size="large"
-                        sx={{ mb: 2 }}
-                      >
-                        Đi đến trang quản lý
-                      </Button>
-                    </Box>
-                  ) : (
-                    // Hiển thị khi người dùng xem bài đăng của người khác
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexDirection: { xs: "row", sm: "column" },
-                        flexWrap: { xs: "wrap", sm: "nowrap" },
-                        gap: 2,
-                        justifyContent: {
-                          xs: "space-between",
-                          sm: "flex-start",
-                        },
-                      }}
-                    >
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        color="primary"
-                        onClick={handleOpenContactDialog}
-                        size="large"
-                        sx={{
-                          flex: { xs: "1 1 100%", sm: "1 1 auto" },
-                          order: { xs: 1, sm: 1 },
-                          mb: { xs: 1, sm: 2 },
-                        }}
-                      >
-                        Gửi tin nhắn
-                      </Button>
-
-                      {displayedJobDetail.postType !== "seeking" && (
-                        <Button
-                          fullWidth
-                          variant={applied ? "outlined" : "contained"}
-                          color={applied ? "success" : "success"}
-                          size="large"
-                          disabled={applyLoading || applied}
-                          sx={{
-                            flex: { xs: "1 1 100%", sm: "1 1 auto" },
-                            order: { xs: 0, sm: 0 },
-                            mb: { xs: 1, sm: 2 },
-                          }}
-                          onClick={handleApply}
-                          startIcon={applied && <CheckIcon />}
-                        >
-                          {applyLoading ? (
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                              }}
-                            >
-                              <CircularProgress size={16} color="inherit" />{" "}
-                              Đang xử lý...
-                            </Box>
-                          ) : applied ? (
-                            "Đã ứng tuyển"
-                          ) : (
-                            "Ứng tuyển ngay"
-                          )}
-                        </Button>
-                      )}
-
-                      {displayedJobDetail.postType === "seeking" && (
-                        <Button
-                          fullWidth
-                          variant={applied ? "outlined" : "contained"}
-                          color={applied ? "success" : "success"}
-                          size="large"
-                          disabled={applyLoading || applied}
-                          sx={{
-                            flex: { xs: "1 1 100%", sm: "1 1 auto" },
-                            order: { xs: 0, sm: 0 },
-                            mb: { xs: 1, sm: 2 },
-                          }}
-                          onClick={handleApply}
-                          startIcon={applied && <CheckIcon />}
-                        >
-                          {applyLoading ? (
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                              }}
-                            >
-                              <CircularProgress size={16} color="inherit" />{" "}
-                              Đang xử lý...
-                            </Box>
-                          ) : applied ? (
-                            "Đã mời phỏng vấn"
-                          ) : (
-                            "Mời phỏng vấn"
-                          )}
-                        </Button>
-                      )}
-
-                      <Box
-                        sx={{
-                          display: "flex",
-                          gap: 2,
-                          flexDirection: { xs: "row", sm: "column" },
-                          width: "100%",
-                        }}
-                      >
-                        <Button
-                          fullWidth
-                          variant="outlined"
-                          startIcon={<PhoneIcon />}
-                          href={`tel:${displayedJobDetail.recruiterPhone}`}
-                          size="large"
-                          sx={{
-                            flex: "1 1 50%",
-                            order: { xs: 2, sm: 2 },
-                            mb: { xs: 0, sm: 2 },
-                          }}
-                        >
-                          Gọi điện
-                        </Button>
-
-                        <Button
-                          fullWidth
-                          variant="outlined"
-                          startIcon={<EmailIcon />}
-                          href={`mailto:${displayedJobDetail.recruiterEmail}`}
-                          size="large"
-                          sx={{
-                            flex: "1 1 50%",
-                            order: { xs: 3, sm: 3 },
-                            mb: { xs: 0, sm: 2 },
-                          }}
-                        >
-                          Gửi email
-                        </Button>
-
-                        {/* Nút tải CV - chỉ hiển thị khi bài đăng là tìm việc và có CV */}
-                        {displayedJobDetail.postType === "seeking" &&
-                          displayedJobDetail.hasCv && (
-                            <Button
-                              fullWidth
-                              variant="outlined"
-                              color="primary"
-                              startIcon={
-                                downloadingCV ? (
-                                  <CircularProgress size={20} />
-                                ) : (
-                                  <DescriptionIcon />
-                                )
-                              }
-                              size="large"
-                              disabled={downloadingCV}
-                              onClick={handleDownloadCV}
-                              sx={{
-                                flex: "1 1 100%",
-                                order: { xs: 4, sm: 4 },
-                                backgroundColor: "rgba(25, 118, 210, 0.04)",
-                                borderWidth: "1px",
-                                "&:hover": {
-                                  backgroundColor: "rgba(25, 118, 210, 0.08)",
-                                  borderWidth: "1px",
-                                },
-                              }}
-                            >
-                              Tải CV
-                            </Button>
-                          )}
-                      </Box>
-                    </Box>
-                  )}
-
-                  <Divider sx={{ my: 3 }} />
-
-                  <Grid container spacing={1}>
-                    <Grid item xs={6} sm={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        Ngày đăng
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6} sm={6}>
-                      <Typography
-                        variant="body2"
-                        fontWeight="medium"
-                        align="right"
-                      >
-                        {displayedJobDetail.createdAt
-                          ? new Date(
-                              displayedJobDetail.createdAt
-                            ).toLocaleDateString("vi-VN")
-                          : displayedJobDetail.postedDate || "Không xác định"}
-                      </Typography>
-                    </Grid>
-
-                    {displayedJobDetail.postType !== "seeking" && (
-                      <>
-                        <Grid item xs={6} sm={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            Hạn nộp hồ sơ
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6} sm={6}>
-                          <Typography
-                            variant="body2"
-                            fontWeight="medium"
-                            align="right"
-                          >
-                            {displayedJobDetail.deadline
-                              ? typeof displayedJobDetail.deadline ===
-                                  "string" &&
-                                displayedJobDetail.deadline.includes("T")
-                                ? new Date(
-                                    displayedJobDetail.deadline
-                                  ).toLocaleDateString("vi-VN")
-                                : displayedJobDetail.deadline
-                              : "Không có hạn"}
-                          </Typography>
-                        </Grid>
                       </>
                     )}
-
-                    <Grid item xs={6} sm={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        Loại hình
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={6} sm={6}>
-                      <Typography
-                        variant="body2"
-                        fontWeight="medium"
-                        align="right"
-                      >
-                        {displayedJobDetail.time}
-                      </Typography>
-                    </Grid>
-
-                    {displayedJobDetail.postType === "seeking" && (
-                      <>
-                        <Grid item xs={6} sm={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            Kinh nghiệm
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6} sm={6}>
-                          <Typography
-                            variant="body2"
-                            fontWeight="medium"
-                            align="right"
-                          >
-                            {displayedJobDetail.experience}
-                          </Typography>
-                        </Grid>
-                      </>
-                    )}
-                  </Grid>
                 </Paper>
               </Grid>
             </Grid>
@@ -1174,8 +849,8 @@ const JobDetail = () => {
             }}
           >
             <Avatar
-              src={displayedJobDetail.recruiterAvatar}
-              alt={displayedJobDetail.recruiterName}
+              src={displayedJobDetail.authorAvatar}
+              alt={displayedJobDetail.authorName}
               sx={{
                 width: { xs: 70, sm: 50 },
                 height: { xs: 70, sm: 50 },
@@ -1185,12 +860,10 @@ const JobDetail = () => {
             />
             <Box>
               <Typography variant="subtitle1" fontWeight="bold">
-                {displayedJobDetail.recruiterName}
+                {displayedJobDetail.authorName}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {displayedJobDetail.postType === "seeking"
-                  ? displayedJobDetail.recruiterPosition || "Ứng viên tìm việc"
-                  : displayedJobDetail.recruiterPosition}
+                {displayedJobDetail.authorPosition}
               </Typography>
             </Box>
           </Box>

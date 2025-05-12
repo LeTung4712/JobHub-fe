@@ -46,6 +46,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import CheckIcon from "@mui/icons-material/Check";
 import { useNavigate } from "react-router-dom";
 import { getJobs } from "../../api/jobs";
+import JobCard from "../../components/JobCard";
 
 function Jobs() {
   const [filterCategory, setFilterCategory] = useState("all");
@@ -481,134 +482,134 @@ function Jobs() {
           }}
         >
           <form onSubmit={handleSearchSubmit}>
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={{ xs: 2, md: 3 }}
-            alignItems={{ xs: "stretch", md: "center" }}
-          >
-            <TextField
-              fullWidth
-              placeholder="Tên vị trí, công ty hoặc địa điểm..."
-              variant="outlined"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="primary" />
-                  </InputAdornment>
-                ),
-                endAdornment: searchQuery && (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={clearSearch}>
-                      <ClearIcon />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                },
-              }}
-            />
-
-            <Box
-              sx={{
-                display: "flex",
-                gap: 2,
-                flexDirection: { xs: "row", md: "row" },
-                width: { xs: "100%", md: "auto" },
-              }}
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={{ xs: 2, md: 3 }}
+              alignItems={{ xs: "stretch", md: "center" }}
             >
-              <FormControl
+              <TextField
+                fullWidth
+                placeholder="Tên vị trí, công ty hoặc địa điểm..."
+                variant="outlined"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="primary" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: searchQuery && (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={clearSearch}>
+                        <ClearIcon />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
                 sx={{
-                  flexGrow: { xs: 1, md: 0 },
-                  minWidth: { xs: "auto", md: 200 },
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 2,
                   },
                 }}
-              >
-                <InputLabel id="category-filter-label">Danh mục</InputLabel>
-                <Select
-                  labelId="category-filter-label"
-                  id="category-filter"
-                  value={filterCategory}
-                  onChange={handleCategoryChange}
-                  label="Danh mục"
-                  startAdornment={
-                    <InputAdornment position="start">
-                      <FilterListIcon color="primary" sx={{ mr: 1 }} />
-                    </InputAdornment>
-                  }
-                >
-                  <MenuItem value="all">Tất cả</MenuItem>
-                  <MenuItem value="development">Phát triển</MenuItem>
-                  <MenuItem value="design">Thiết kế</MenuItem>
-                  <MenuItem value="management">Quản lý</MenuItem>
-                  <MenuItem value="data">Dữ liệu</MenuItem>
-                </Select>
-              </FormControl>
+              />
 
-              {isMobile ? (
-                <Badge
-                  badgeContent={activeFiltersCount}
-                  color="primary"
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  flexDirection: { xs: "row", md: "row" },
+                  width: { xs: "100%", md: "auto" },
+                }}
+              >
+                <FormControl
                   sx={{
-                    "& .MuiBadge-badge": {
-                      right: 10,
-                      top: 10,
+                    flexGrow: { xs: 1, md: 0 },
+                    minWidth: { xs: "auto", md: 200 },
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
                     },
                   }}
                 >
+                  <InputLabel id="category-filter-label">Danh mục</InputLabel>
+                  <Select
+                    labelId="category-filter-label"
+                    id="category-filter"
+                    value={filterCategory}
+                    onChange={handleCategoryChange}
+                    label="Danh mục"
+                    startAdornment={
+                      <InputAdornment position="start">
+                        <FilterListIcon color="primary" sx={{ mr: 1 }} />
+                      </InputAdornment>
+                    }
+                  >
+                    <MenuItem value="all">Tất cả</MenuItem>
+                    <MenuItem value="development">Phát triển</MenuItem>
+                    <MenuItem value="design">Thiết kế</MenuItem>
+                    <MenuItem value="management">Quản lý</MenuItem>
+                    <MenuItem value="data">Dữ liệu</MenuItem>
+                  </Select>
+                </FormControl>
+
+                {isMobile ? (
+                  <Badge
+                    badgeContent={activeFiltersCount}
+                    color="primary"
+                    sx={{
+                      "& .MuiBadge-badge": {
+                        right: 10,
+                        top: 10,
+                      },
+                    }}
+                  >
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={toggleFilters}
+                      startIcon={<TuneIcon />}
+                      fullWidth
+                      sx={{
+                        borderRadius: 2,
+                        height: "56px",
+                      }}
+                    >
+                      Bộ lọc
+                    </Button>
+                  </Badge>
+                ) : (
                   <Button
-                    variant="contained"
+                    variant={showFilters ? "contained" : "outlined"}
                     color="primary"
                     onClick={toggleFilters}
                     startIcon={<TuneIcon />}
-                    fullWidth
-                    sx={{
-                      borderRadius: 2,
-                      height: "56px",
-                    }}
+                    sx={{ borderRadius: 2, whiteSpace: "nowrap" }}
                   >
-                    Bộ lọc
+                    Bộ lọc khác
+                    {activeFiltersCount > 0 && (
+                      <Box
+                        component="span"
+                        sx={{
+                          ml: 1,
+                          bgcolor: "white",
+                          color: "primary.main",
+                          width: 20,
+                          height: 20,
+                          borderRadius: "50%",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "0.75rem",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {activeFiltersCount}
+                      </Box>
+                    )}
                   </Button>
-                </Badge>
-              ) : (
-                <Button
-                  variant={showFilters ? "contained" : "outlined"}
-                  color="primary"
-                  onClick={toggleFilters}
-                  startIcon={<TuneIcon />}
-                  sx={{ borderRadius: 2, whiteSpace: "nowrap" }}
-                >
-                  Bộ lọc khác
-                  {activeFiltersCount > 0 && (
-                    <Box
-                      component="span"
-                      sx={{
-                        ml: 1,
-                        bgcolor: "white",
-                        color: "primary.main",
-                        width: 20,
-                        height: 20,
-                        borderRadius: "50%",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "0.75rem",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {activeFiltersCount}
-                    </Box>
-                  )}
-                </Button>
-              )}
-            </Box>
-          </Stack>
+                )}
+              </Box>
+            </Stack>
           </form>
 
           {/* Bộ lọc mở rộng cho desktop */}
@@ -967,253 +968,38 @@ function Jobs() {
             <CircularProgress />
           </Box>
         ) : filteredJobs.length > 0 ? (
-          <Grid
-            container
-            spacing={2}
+          <Box
             sx={{
-              "& .MuiGrid-item": {
-                display: "flex",
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, 1fr)",
+                md: "repeat(3, 1fr)",
+                lg: "repeat(4, 1fr)",
+                xl: "repeat(5, 1fr)",
               },
+              gap: 2,
+              width: "100%",
             }}
           >
             {filteredJobs.map((job) => (
-              <Grid
-                item
-                xs={12}
-                sm={6}
-                md={4}
-                lg={2.4}
+              <Box
                 key={job.id}
                 sx={{
-                  mb: { xs: 2, sm: 2, md: 3 },
-                  width: { lg: "20%" },
-                  flexBasis: { lg: "20%" },
-                  maxWidth: { lg: "20%" },
+                  mb: { xs: 2, sm: 2, md: 0 },
+                  width: "100%",
+                  height: "100%",
                 }}
               >
-                <Card
-                  elevation={2}
-                  sx={{
-                    height: { xs: "360px", md: "340px" },
-                    width: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    transition: "all 0.3s ease",
-                    borderRadius: 3,
-                    overflow: "hidden",
-                    border: "1px solid rgba(0,0,0,0.06)",
-                    flexGrow: 1,
-                    position: "relative",
-                    "&:hover": {
-                      transform: "translateY(-10px)",
-                      boxShadow: "0 15px 30px rgba(0,0,0,0.1)",
-                      borderColor: theme.palette.primary.main,
-                    },
-                  }}
-                >
-                  {/* Badge cho loại bài đăng */}
-                  {job.type === "seeking" && (
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        top: 0,
-                        right: 0,
-                        backgroundColor: theme.palette.secondary.main,
-                        color: "white",
-                        fontSize: "0.7rem",
-                        fontWeight: "bold",
-                        py: 0.5,
-                        px: 1,
-                        borderBottomLeftRadius: 8,
-                      }}
-                    >
-                      Tìm việc
-                    </Box>
-                  )}
-
-                  <CardContent
-                    sx={{
-                      flexGrow: 1,
-                      p: { xs: 2, md: 2.5 },
-                      "&:last-child": { pb: 2 },
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Box>
-                      <Box sx={{ mb: 1.5, height: "5rem" }}>
-                        <Chip
-                          label={getCategoryLabel(job.category)}
-                          color={getCategoryColor(job.category)}
-                          size="small"
-                          sx={{ mb: 1, fontWeight: 500, fontSize: "0.7rem" }}
-                        />
-                        <Typography
-                          variant="h6"
-                          component="h2"
-                          color="primary.dark"
-                          sx={{
-                            fontWeight: "bold",
-                            fontSize: {
-                              xs: "1rem",
-                              md: "0.9rem",
-                              lg: "0.95rem",
-                            },
-                            height: "2.5rem",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            lineHeight: 1.3,
-                          }}
-                        >
-                          {job.title}
-                        </Typography>
-                      </Box>
-
-                      <Stack spacing={1} sx={{ height: "8rem" }}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                            height: "1.5rem",
-                          }}
-                        >
-                          <BusinessIcon
-                            fontSize="small"
-                            color="action"
-                            sx={{ fontSize: "0.9rem", minWidth: "18px" }}
-                          />
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontSize: { xs: "0.85rem", lg: "0.8rem" },
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {job.company}
-                          </Typography>
-                        </Box>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                            height: "1.5rem",
-                          }}
-                        >
-                          <LocationOnIcon
-                            fontSize="small"
-                            color="action"
-                            sx={{ fontSize: "0.9rem", minWidth: "18px" }}
-                          />
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontSize: { xs: "0.85rem", lg: "0.8rem" },
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {job.location}
-                          </Typography>
-                        </Box>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                            height: "1.5rem",
-                          }}
-                        >
-                          <AttachMoneyIcon
-                            fontSize="small"
-                            color="action"
-                            sx={{ fontSize: "0.9rem", minWidth: "18px" }}
-                          />
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontSize: { xs: "0.85rem", lg: "0.8rem" },
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {job.salary}
-                          </Typography>
-                        </Box>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                            height: "1.5rem",
-                          }}
-                        >
-                          <AccessTimeIcon
-                            fontSize="small"
-                            color="action"
-                            sx={{ fontSize: "0.9rem", minWidth: "18px" }}
-                          />
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontSize: { xs: "0.85rem", lg: "0.8rem" },
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {job.deadline
-                              ? typeof job.deadline === "string" &&
-                                job.deadline.includes("T")
-                                ? new Date(job.deadline).toLocaleDateString(
-                                    "vi-VN"
-                                  )
-                                : job.deadline
-                              : "Không có hạn"}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    </Box>
-                  </CardContent>
-                  <Divider />
-                  <CardActions
-                    sx={{ p: { xs: 1.5, md: 1.5 }, height: "3.5rem" }}
-                  >
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      fullWidth
-                      onClick={() => handleApplyClick(job.id, job.title)}
-                      sx={{
-                        py: 0.5,
-                        fontWeight: "bold",
-                        fontSize: { xs: "0.85rem", md: "0.75rem" },
-                        borderRadius: 2,
-                        transition: "all 0.3s ease",
-                        "&:hover": {
-                          transform: "translateY(-3px)",
-                          boxShadow: "0 5px 15px rgba(0,0,0,0.2)",
-                        },
-                      }}
-                    >
-                      {job.postType === "seeking"
-                        ? "Xem hồ sơ"
-                        : "Ứng tuyển ngay"}
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Grid>
+                <JobCard
+                  job={job}
+                  onClick={handleApplyClick}
+                  getCategoryLabel={getCategoryLabel}
+                  getCategoryColor={getCategoryColor}
+                />
+              </Box>
             ))}
-          </Grid>
+          </Box>
         ) : (
           <Alert
             severity="info"

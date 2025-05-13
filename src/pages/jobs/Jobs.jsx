@@ -3,10 +3,6 @@ import {
   Container,
   Typography,
   Box,
-  Grid,
-  Card,
-  CardContent,
-  CardActions,
   Button,
   FormControl,
   InputLabel,
@@ -33,13 +29,8 @@ import {
   Fab,
   CircularProgress,
 } from "@mui/material";
-import LocationOnIcon from "@mui/icons-material/LocationOn";
-import BusinessIcon from "@mui/icons-material/Business";
-import WorkIcon from "@mui/icons-material/Work";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import SearchIcon from "@mui/icons-material/Search";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import ClearIcon from "@mui/icons-material/Clear";
 import TuneIcon from "@mui/icons-material/Tune";
 import CloseIcon from "@mui/icons-material/Close";
@@ -47,9 +38,28 @@ import CheckIcon from "@mui/icons-material/Check";
 import { useNavigate } from "react-router-dom";
 import { getJobs } from "../../api/jobs";
 import JobCard from "../../components/JobCard";
+import {
+  categories,
+  jobTypes,
+  experienceLevels,
+} from "../../constants/formData";
 
 // Cache cho danh sách công việc
 const jobsCache = new Map();
+
+// Mapping màu cho các danh mục
+const categoryColors = {
+  software: "primary",
+  design: "secondary",
+  marketing: "success",
+  "project-management": "info",
+  finance: "warning",
+  "customer-service": "error",
+  sales: "primary",
+  hr: "secondary",
+  education: "success",
+  other: "default",
+};
 
 function Jobs() {
   const [filterCategory, setFilterCategory] = useState("all");
@@ -66,11 +76,12 @@ function Jobs() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(12);
   const [totalJobs, setTotalJobs] = useState(0);
+  const [filterJobType, setFilterJobType] = useState("all");
+  const [filterExperience, setFilterExperience] = useState("all");
 
   const theme = useTheme();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const isTablet = useMediaQuery(theme.breakpoints.down("md"));
 
   // Gọi API khi component mount hoặc khi bộ lọc thay đổi
   useEffect(() => {
@@ -87,6 +98,8 @@ function Jobs() {
     salaryRange,
     postDate,
     searchQuery,
+    filterJobType,
+    filterExperience,
   ]);
 
   // Reset lại trang khi bộ lọc thay đổi
@@ -95,12 +108,27 @@ function Jobs() {
     if (page !== 1) {
       setPage(1);
     }
-  }, [filterCategory, postType, salaryRange, postDate, searchQuery]);
+  }, [
+    filterCategory,
+    postType,
+    salaryRange,
+    postDate,
+    searchQuery,
+    filterJobType,
+    filterExperience,
+  ]);
 
   // Cập nhật số lượng bộ lọc đang kích hoạt
   useEffect(() => {
     updateActiveFiltersCount();
-  }, [filterCategory, postType, salaryRange, postDate]);
+  }, [
+    filterCategory,
+    postType,
+    salaryRange,
+    postDate,
+    filterJobType,
+    filterExperience,
+  ]);
 
   // Kiểm tra thời gian đăng
   const checkPostDate = (jobDate, filterDate) => {
@@ -193,6 +221,16 @@ function Jobs() {
     // setPage(1) được xử lý ở useEffect
   };
 
+  const handleJobTypeChange = (event) => {
+    setFilterJobType(event.target.value);
+    // setPage(1) được xử lý ở useEffect
+  };
+
+  const handleExperienceChange = (event) => {
+    setFilterExperience(event.target.value);
+    // setPage(1) được xử lý ở useEffect
+  };
+
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
     // Không cần gọi fetchJobs, useEffect sẽ xử lý với timeout
@@ -209,6 +247,8 @@ function Jobs() {
     setSalaryRange([0, 50]);
     setPostDate("all");
     setSearchQuery("");
+    setFilterJobType("all");
+    setFilterExperience("all");
     // Không cần gọi fetchJobs hay reset page vì useEffect sẽ xử lý
   };
 
@@ -237,62 +277,19 @@ function Jobs() {
     if (postType !== "all") count++;
     if (salaryRange[0] > 0 || salaryRange[1] < 50) count++;
     if (postDate !== "all") count++;
+    if (filterJobType !== "all") count++;
+    if (filterExperience !== "all") count++;
 
     setActiveFiltersCount(count);
   };
 
   const getCategoryLabel = (category) => {
-    switch (category) {
-      case "software":
-        return "Phát triển phần mềm";
-      case "design":
-        return "Thiết kế";
-      case "marketing":
-        return "Marketing";
-      case "project-management":
-        return "Quản lý dự án";
-      case "finance":
-        return "Kế toán & Tài chính";
-      case "customer-service":
-        return "Dịch vụ khách hàng";
-      case "sales":
-        return "Sales";
-      case "hr":
-        return "Nhân sự";
-      case "education":
-        return "Giáo dục";
-      case "other":
-        return "Khác";
-      default:
-        return category;
-    }
+    const foundCategory = categories.find((cat) => cat.value === category);
+    return foundCategory ? foundCategory.label : category;
   };
 
   const getCategoryColor = (category) => {
-    switch (category) {
-      case "software":
-        return "primary";
-      case "design":
-        return "secondary";
-      case "marketing":
-        return "success";
-      case "project-management":
-        return "info";
-      case "finance":
-        return "warning";
-      case "customer-service":
-        return "error";
-      case "sales":
-        return "primary";
-      case "hr":
-        return "secondary";
-      case "education":
-        return "success";
-      case "other":
-        return "default";
-      default:
-        return "default";
-    }
+    return categoryColors[category] || "default";
   };
 
   const handleApplyClick = (jobId, jobTitle) => {
@@ -354,6 +351,16 @@ function Jobs() {
         params.postDate = postDate;
       }
 
+      // Thêm tham số loại công việc
+      if (filterJobType !== "all") {
+        params.type = filterJobType;
+      }
+
+      // Thêm tham số kinh nghiệm
+      if (filterExperience !== "all") {
+        params.experience = filterExperience;
+      }
+
       // Tạo cache key từ tham số API
       const cacheKey = JSON.stringify(params);
 
@@ -370,6 +377,7 @@ function Jobs() {
       // Gọi API
       console.log("Gọi API cho danh sách công việc với params:", params);
       const response = await getJobs(params);
+      console.log("Response:", response);
 
       if (response.success) {
         // Xử lý dữ liệu từ API
@@ -379,11 +387,12 @@ function Jobs() {
           id: job._id || job.id,
           category: job.category || "other",
           type: job.postType || job.type || "hiring",
+          jobType: job.type || "full-time",
+          experience: job.experience || "all",
           // Tính toán giá trị lương để hiển thị
           salaryValue: getSalaryValueFromJob(job),
           // Đảm bảo có title, company và location để hiển thị
           title: job.title || "Không có tiêu đề",
-          company: job.company || job.author?.company || "Không xác định",
           location: job.location || "Không xác định",
           // Format salary string nếu có salaryMin và salaryMax
           salary: formatSalaryDisplay(job),
@@ -595,20 +604,11 @@ function Jobs() {
                     }
                   >
                     <MenuItem value="all">Tất cả</MenuItem>
-                    <MenuItem value="software">Phát triển phần mềm</MenuItem>
-                    <MenuItem value="design">Thiết kế</MenuItem>
-                    <MenuItem value="marketing">Marketing</MenuItem>
-                    <MenuItem value="project-management">
-                      Quản lý dự án
-                    </MenuItem>
-                    <MenuItem value="finance">Kế toán & Tài chính</MenuItem>
-                    <MenuItem value="customer-service">
-                      Dịch vụ khách hàng
-                    </MenuItem>
-                    <MenuItem value="sales">Sales</MenuItem>
-                    <MenuItem value="hr">Nhân sự</MenuItem>
-                    <MenuItem value="education">Giáo dục</MenuItem>
-                    <MenuItem value="other">Khác</MenuItem>
+                    {categories.map((category) => (
+                      <MenuItem key={category.value} value={category.value}>
+                        {category.label}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
 
@@ -718,6 +718,66 @@ function Jobs() {
                       control={<Radio size="small" />}
                       label="Tìm việc"
                     />
+                  </RadioGroup>
+                </FormControl>
+
+                {/* Loại hình công việc */}
+                <FormControl component="fieldset">
+                  <FormLabel
+                    component="legend"
+                    sx={{ fontWeight: 600, color: "text.primary", mb: 1 }}
+                  >
+                    Loại hình công việc
+                  </FormLabel>
+                  <RadioGroup
+                    aria-label="job-type"
+                    name="job-type"
+                    value={filterJobType}
+                    onChange={handleJobTypeChange}
+                  >
+                    <FormControlLabel
+                      value="all"
+                      control={<Radio size="small" />}
+                      label="Tất cả"
+                    />
+                    {jobTypes.map((type) => (
+                      <FormControlLabel
+                        key={type.value}
+                        value={type.value}
+                        control={<Radio size="small" />}
+                        label={type.label}
+                      />
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+
+                {/* Kinh nghiệm */}
+                <FormControl component="fieldset">
+                  <FormLabel
+                    component="legend"
+                    sx={{ fontWeight: 600, color: "text.primary", mb: 1 }}
+                  >
+                    Kinh nghiệm
+                  </FormLabel>
+                  <RadioGroup
+                    aria-label="experience"
+                    name="experience"
+                    value={filterExperience}
+                    onChange={handleExperienceChange}
+                  >
+                    <FormControlLabel
+                      value="all"
+                      control={<Radio size="small" />}
+                      label="Tất cả"
+                    />
+                    {experienceLevels.map((level) => (
+                      <FormControlLabel
+                        key={level.value}
+                        value={level.value}
+                        control={<Radio size="small" />}
+                        label={level.label}
+                      />
+                    ))}
                   </RadioGroup>
                 </FormControl>
 
@@ -909,6 +969,66 @@ function Jobs() {
                   control={<Radio />}
                   label="Tìm việc"
                 />
+              </RadioGroup>
+            </Box>
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Loại hình công việc */}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+                Loại hình công việc
+              </Typography>
+              <RadioGroup
+                aria-label="job-type"
+                name="job-type"
+                value={filterJobType}
+                onChange={handleJobTypeChange}
+                sx={{ ml: 1 }}
+              >
+                <FormControlLabel
+                  value="all"
+                  control={<Radio />}
+                  label="Tất cả"
+                />
+                {jobTypes.map((type) => (
+                  <FormControlLabel
+                    key={type.value}
+                    value={type.value}
+                    control={<Radio />}
+                    label={type.label}
+                  />
+                ))}
+              </RadioGroup>
+            </Box>
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Kinh nghiệm */}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+                Kinh nghiệm
+              </Typography>
+              <RadioGroup
+                aria-label="experience"
+                name="experience"
+                value={filterExperience}
+                onChange={handleExperienceChange}
+                sx={{ ml: 1 }}
+              >
+                <FormControlLabel
+                  value="all"
+                  control={<Radio />}
+                  label="Tất cả"
+                />
+                {experienceLevels.map((level) => (
+                  <FormControlLabel
+                    key={level.value}
+                    value={level.value}
+                    control={<Radio />}
+                    label={level.label}
+                  />
+                ))}
               </RadioGroup>
             </Box>
 

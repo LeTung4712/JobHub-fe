@@ -15,33 +15,23 @@ import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import WorkHistoryIcon from "@mui/icons-material/WorkHistory";
 import WorkOutlineIcon from "@mui/icons-material/WorkOutline";
+import { jobTypes, experienceLevels } from "../constants/formData";
 
 const JobCard = ({ job, onClick, getCategoryLabel, getCategoryColor }) => {
   const theme = useTheme();
 
   // Mapping cho kinh nghiệm để hiển thị
   const getExperienceLabel = (experienceCode) => {
-    const experienceMap = {
-      entry: "Mới đi làm",
-      junior: "1-2 năm",
-      mid: "3-5 năm",
-      senior: "5+ năm",
-      expert: "Chuyên gia",
-    };
-    return experienceMap[experienceCode] || "Không yêu cầu";
+    const foundExperience = experienceLevels.find(
+      (exp) => exp.value === experienceCode
+    );
+    return foundExperience ? foundExperience.label : "Không yêu cầu";
   };
 
   // Mapping cho loại hình công việc
   const getJobTypeLabel = (typeCode) => {
-    const typeMap = {
-      "full-time": "Toàn thời gian",
-      "part-time": "Bán thời gian",
-      freelance: "Freelance",
-      contract: "Hợp đồng",
-      internship: "Thực tập",
-      remote: "Remote",
-    };
-    return typeMap[typeCode] || "Khác";
+    const foundType = jobTypes.find((type) => type.value === typeCode);
+    return foundType ? foundType.label : "Khác";
   };
 
   return (
@@ -177,7 +167,7 @@ const JobCard = ({ job, onClick, getCategoryLabel, getCategoryColor }) => {
                 whiteSpace: "nowrap",
               }}
             >
-              {getJobTypeLabel(job.type)}
+              {getJobTypeLabel(job.jobType)}
             </Typography>
           </Box>
           <Box
@@ -227,7 +217,7 @@ const JobCard = ({ job, onClick, getCategoryLabel, getCategoryColor }) => {
                 whiteSpace: "nowrap",
               }}
             >
-              Kinh nghiệm: {getExperienceLabel(job.experience)}
+              {getExperienceLabel(job.experience)}
             </Typography>
           </Box>
           <Box

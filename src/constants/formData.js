@@ -36,7 +36,6 @@ export const experienceLevels = [
 // Form mặc định
 export const defaultFormData = {
   title: "",
-  company: "",
   location: "",
   salary: "",
   category: "software",
@@ -46,8 +45,5 @@ export const defaultFormData = {
   requirements: [],
   benefits: [],
   deadline: null,
-  industry: "",
-  companySize: "",
-  website: "",
   salaryRange: [10, 25], // Mức lương mặc định từ 10-25 triệu
 };

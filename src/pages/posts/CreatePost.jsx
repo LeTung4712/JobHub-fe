@@ -157,7 +157,7 @@ function CreatePost() {
                     handleInputChange={handleInputChange}
                     handleDeadlineChange={handleDeadlineChange}
                     handleSalaryRangeChange={handleSalaryRangeChange}
-                    valueLabelFormat={valueLabelFormat}
+                            valueLabelFormat={valueLabelFormat}
                   />
                 </React.Suspense>
               )}

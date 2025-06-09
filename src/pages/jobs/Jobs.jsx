@@ -43,6 +43,7 @@ import {
   jobTypes,
   experienceLevels,
 } from "../../constants/formData";
+import { slugify } from "../../utils/slugify";
 
 // Cache cho danh sách công việc
 const jobsCache = new Map();
@@ -294,19 +295,7 @@ function Jobs() {
 
   const handleApplyClick = (jobId, jobTitle) => {
     // Tạo slug từ tiêu đề
-    const slug = jobTitle
-      .toLowerCase()
-      .replace(/[^\w\sÀ-ỹ]/g, "") // Loại bỏ ký tự đặc biệt nhưng giữ dấu tiếng Việt
-      .replace(/\s+/g, "-") // Thay thế khoảng trắng bằng dấu gạch ngang
-      .replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a")
-      .replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e")
-      .replace(/ì|í|ị|ỉ|ĩ/g, "i")
-      .replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o")
-      .replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u")
-      .replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y")
-      .replace(/đ/g, "d")
-      .replace(/-{2,}/g, "-") // Thay thế nhiều dấu gạch ngang liên tiếp bằng một dấu
-      .substring(0, 50); // Giới hạn độ dài slug
+    const slug = slugify(jobTitle);
 
     navigate(`/jobs/${slug}/${jobId}`);
   };

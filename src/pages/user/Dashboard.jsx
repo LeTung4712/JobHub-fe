@@ -745,7 +745,9 @@ function Dashboard() {
                         />
                         <IconButton
                           size="small"
-                          onClick={() => navigate(`/jobs/${job.id}`)}
+                          onClick={() =>
+                            navigate(`/jobs/${job.slug}/${job.id}`)
+                          }
                           sx={{
                             bgcolor: "rgba(0, 0, 0, 0.04)",
                             "&:hover": {

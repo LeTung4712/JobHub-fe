@@ -25,6 +25,7 @@ import {
   Tooltip,
   Fade,
   Stack,
+  Slider,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -50,6 +51,8 @@ function EditPost() {
     title: "",
     location: "",
     salary: "",
+    salaryMin: 0,
+    salaryMax: 100,
     category: "",
     type: "",
     experience: "",
@@ -58,6 +61,7 @@ function EditPost() {
     benefits: [],
     deadline: null,
     status: "active",
+    postType: "hiring",
   });
   const [requirementInput, setRequirementInput] = useState("");
   const [benefitInput, setBenefitInput] = useState("");
@@ -113,8 +117,8 @@ function EditPost() {
             title: job.title || "",
             location: job.location || "",
             salary: job.salary || "",
-            salaryMin: job.salaryMin || "",
-            salaryMax: job.salaryMax || "",
+            salaryMin: job.salaryMin || 0,
+            salaryMax: job.salaryMax || 100,
             category: job.category || "",
             type: job.type || "",
             experience: job.experience || "",
@@ -213,9 +217,28 @@ function EditPost() {
     }));
   };
 
+  const handleSalaryRangeChange = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      salaryMin: newValue[0],
+      salaryMax: newValue[1],
+      salary: `${newValue[0]}-${newValue[1]} triệu`,
+    }));
+  };
+
+  const valueLabelFormat = (value) => {
+    return `${value} triệu`;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.location || !formData.category || !formData.type || !formData.description) {
+    if (
+      !formData.title ||
+      !formData.location ||
+      !formData.category ||
+      !formData.type ||
+      !formData.description
+    ) {
       setSubmitError(true);
       setErrorMessage("Vui lòng điền đầy đủ các trường bắt buộc");
       setTimeout(() => setSubmitError(false), 5000);
@@ -230,7 +253,9 @@ function EditPost() {
       };
       const response = await updateJob(id, jobData);
       if (response.success) {
-        enqueueSnackbar("Cập nhật công việc thành công", { variant: "success" });
+        enqueueSnackbar("Cập nhật công việc thành công", {
+          variant: "success",
+        });
         setTimeout(() => navigate("/posts"), 1500);
       } else {
         throw new Error(response.message || "Cập nhật không thành công");
@@ -268,25 +293,34 @@ function EditPost() {
     <Box
       sx={{
         py: 4,
-        backgroundImage: "linear-gradient(to bottom, rgba(100, 108, 255, 0.05), rgba(100, 108, 255, 0.03))",
+        backgroundImage:
+          "linear-gradient(to bottom, rgba(100, 108, 255, 0.05), rgba(100, 108, 255, 0.03))",
         minHeight: "100vh",
       }}
     >
       <Container maxWidth="lg">
         <Box sx={{ display: "flex", alignItems: "center", mb: 4 }}>
-          <IconButton 
-            onClick={() => navigate("/posts")} 
+          <IconButton
+            onClick={() => navigate("/posts")}
             sx={{ mr: 2, backgroundColor: "white", boxShadow: 1 }}
           >
             <ArrowBackIcon />
           </IconButton>
-          <Typography variant="h4" component="h1" fontWeight="bold" color="primary.main">
+          <Typography
+            variant="h4"
+            component="h1"
+            fontWeight="bold"
+            color="primary.main"
+          >
             Chỉnh sửa bài đăng
           </Typography>
         </Box>
 
         {isLoading ? (
-          <Card elevation={4} sx={{ borderRadius: 3, p: 5, textAlign: "center" }}>
+          <Card
+            elevation={4}
+            sx={{ borderRadius: 3, p: 5, textAlign: "center" }}
+          >
             <CircularProgress size={50} sx={{ mb: 2 }} />
             <Typography variant="h6" sx={{ fontWeight: 500 }}>
               Đang tải thông tin bài đăng...
@@ -294,15 +328,23 @@ function EditPost() {
           </Card>
         ) : (
           <Box>
-            <Card elevation={0} sx={{ borderRadius: 3, mb: 4, overflow: "hidden", border: `1px solid ${theme.palette.divider}` }}>
-              <Box 
-                sx={{ 
-                  backgroundColor: theme.palette.primary.main, 
-                  py: 2, 
+            <Card
+              elevation={0}
+              sx={{
+                borderRadius: 3,
+                mb: 4,
+                overflow: "hidden",
+                border: `1px solid ${theme.palette.divider}`,
+              }}
+            >
+              <Box
+                sx={{
+                  backgroundColor: theme.palette.primary.main,
+                  py: 2,
                   px: 3,
                   display: "flex",
                   justifyContent: "space-between",
-                  alignItems: "center"
+                  alignItems: "center",
                 }}
               >
                 <Typography variant="h6" fontWeight={600} color="white">
@@ -317,33 +359,40 @@ function EditPost() {
                     />
                   }
                   label={
-                    <Typography
-                      variant="body2"
-                      color="white"
-                      fontWeight={600}
-                    >
-                      {formData.status === "active" ? "Đang hoạt động" : "Tạm ngưng"}
+                    <Typography variant="body2" color="white" fontWeight={600}>
+                      {formData.status === "active"
+                        ? "Đang hoạt động"
+                        : "Tạm ngưng"}
                     </Typography>
                   }
                   sx={{ mr: 0 }}
                 />
               </Box>
-              <Box sx={{ px: 3, py: 2, backgroundColor: "rgba(59, 130, 246, 0.05)" }}>
+              <Box
+                sx={{
+                  px: 3,
+                  py: 2,
+                  backgroundColor: "rgba(59, 130, 246, 0.05)",
+                }}
+              >
                 <Typography variant="body2" color="text.secondary">
-                  {formData.status === "active" 
-                    ? "Bài đăng của bạn đang hiển thị cho ứng viên. Chuyển sang chế độ tạm ngưng nếu bạn không còn tuyển dụng vị trí này." 
+                  {formData.status === "active"
+                    ? "Bài đăng của bạn đang hiển thị cho ứng viên. Chuyển sang chế độ tạm ngưng nếu bạn không còn tuyển dụng vị trí này."
                     : "Bài đăng của bạn hiện đang tạm ngưng và không hiển thị cho ứng viên. Kích hoạt lại khi bạn muốn tiếp tục tuyển dụng."}
                 </Typography>
               </Box>
             </Card>
 
-            <Card elevation={4} sx={{ borderRadius: 3, mb: 4, overflow: "hidden" }}>
-              <Box 
-                sx={{ 
-                  backgroundColor: theme.palette.background.paper, 
-                  py: 2, 
+            <Card
+              elevation={4}
+              sx={{ borderRadius: 3, mb: 4, overflow: "hidden" }}
+            >
+              <Box
+                sx={{
+                  backgroundColor: theme.palette.background.paper,
+                  py: 2,
                   px: 3,
-                  borderBottom: `1px solid ${theme.palette.divider}`
+                  borderBottom: `1px solid ${theme.palette.divider}`,
                 }}
               >
                 <Typography variant="h6" fontWeight={600} color="primary.main">
@@ -354,15 +403,51 @@ function EditPost() {
                 <Box component="form" onSubmit={handleSubmit} noValidate>
                   <Grid container spacing={3}>
                     <Grid item xs={12}>
+                      <FormControl
+                        fullWidth
+                        required
+                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+                      >
+                        <InputLabel id="post-type-label">
+                          Loại bài đăng
+                        </InputLabel>
+                        <Select
+                          labelId="post-type-label"
+                          id="postType"
+                          name="postType"
+                          value={formData.postType}
+                          onChange={handleInputChange}
+                          label="Loại bài đăng"
+                          startAdornment={
+                            <InputAdornment position="start">
+                              <WorkOutlineIcon color="primary" />
+                            </InputAdornment>
+                          }
+                        >
+                          <MenuItem value="hiring">Tuyển người</MenuItem>
+                          <MenuItem value="seeking">Tìm việc</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+
+                    <Grid item xs={12}>
                       <TextField
                         required
                         fullWidth
                         id="title"
                         name="title"
-                        label="Tiêu đề công việc"
+                        label={
+                          formData.postType === "hiring"
+                            ? "Tiêu đề công việc"
+                            : "Vị trí ứng tuyển"
+                        }
                         value={formData.title}
                         onChange={handleInputChange}
-                        placeholder="Ví dụ: Frontend Developer, Kế toán trưởng, ..."
+                        placeholder={
+                          formData.postType === "hiring"
+                            ? "Ví dụ: Frontend Developer, Kế toán trưởng, ..."
+                            : "Ví dụ: Tôi đang tìm việc làm Frontend Developer, ..."
+                        }
                         InputProps={{
                           startAdornment: (
                             <InputAdornment position="start">
@@ -375,285 +460,769 @@ function EditPost() {
                       />
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        required
-                        fullWidth
-                        id="location"
-                        name="location"
-                        label="Địa điểm làm việc"
-                        value={formData.location}
-                        onChange={handleInputChange}
-                        placeholder="Ví dụ: Hà Nội, Hồ Chí Minh, ..."
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <LocationOnOutlinedIcon color="primary" />
-                            </InputAdornment>
-                          ),
-                        }}
-                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-                      />
-                    </Grid>
+                    {formData.postType === "hiring" ? (
+                      // Form cho bài tuyển người
+                      <>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            required
+                            fullWidth
+                            id="location"
+                            name="location"
+                            label="Địa điểm làm việc"
+                            value={formData.location}
+                            onChange={handleInputChange}
+                            placeholder="Ví dụ: Hà Nội, Hồ Chí Minh, ..."
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <LocationOnOutlinedIcon color="primary" />
+                                </InputAdornment>
+                              ),
+                            }}
+                            sx={{
+                              "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                            }}
+                          />
+                        </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        id="salary"
-                        name="salary"
-                        label="Mức lương"
-                        value={formData.salary}
-                        onChange={handleInputChange}
-                        placeholder="Ví dụ: 15-25 triệu, Thỏa thuận, ..."
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <AttachMoneyOutlinedIcon color="primary" />
-                            </InputAdornment>
-                          ),
-                        }}
-                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-                      />
-                    </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Box sx={{ px: 2 }}>
+                            <Typography gutterBottom>
+                              Mức lương (triệu VND)
+                            </Typography>
+                            <Slider
+                              value={[formData.salaryMin, formData.salaryMax]}
+                              onChange={handleSalaryRangeChange}
+                              valueLabelDisplay="auto"
+                              valueLabelFormat={valueLabelFormat}
+                              min={0}
+                              max={100}
+                              step={1}
+                              marks={[
+                                { value: 0, label: "0" },
+                                { value: 25, label: "25" },
+                                { value: 50, label: "50" },
+                                { value: 75, label: "75" },
+                                { value: 100, label: "100+" },
+                              ]}
+                              sx={{
+                                color: theme.palette.primary.main,
+                                "& .MuiSlider-thumb": {
+                                  width: 24,
+                                  height: 24,
+                                  backgroundColor: "white",
+                                  border: "2px solid currentColor",
+                                  "&:hover, &.Mui-focusVisible": {
+                                    boxShadow:
+                                      "0 0 0 8px rgba(100, 108, 255, 0.16)",
+                                  },
+                                },
+                                "& .MuiSlider-track": {
+                                  height: 4,
+                                },
+                                "& .MuiSlider-rail": {
+                                  height: 4,
+                                  opacity: 0.5,
+                                },
+                                "& .MuiSlider-mark": {
+                                  width: 2,
+                                  height: 2,
+                                  backgroundColor: "currentColor",
+                                },
+                                "& .MuiSlider-markLabel": {
+                                  fontSize: "0.75rem",
+                                  color: "text.secondary",
+                                },
+                              }}
+                            />
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ mt: 1 }}
+                            >
+                              {formData.salaryMin === formData.salaryMax
+                                ? `${formData.salaryMin} triệu VND`
+                                : `${formData.salaryMin} - ${formData.salaryMax} triệu VND`}
+                            </Typography>
+                          </Box>
+                        </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                      <FormControl fullWidth required sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}>
-                        <InputLabel id="category-label">Lĩnh vực</InputLabel>
-                        <Select
-                          labelId="category-label"
-                          id="category"
-                          name="category"
-                          value={formData.category}
-                          onChange={handleInputChange}
-                          label="Lĩnh vực"
-                          startAdornment={
-                            <InputAdornment position="start">
-                              <CategoryIcon color="primary" />
-                            </InputAdornment>
-                          }
-                        >
-                          {categories.map((category) => (
-                            <MenuItem key={category.value} value={category.value}>
-                              {category.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <FormControl
+                            fullWidth
+                            required
+                            sx={{
+                              "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                            }}
+                          >
+                            <InputLabel id="category-label">
+                              Lĩnh vực
+                            </InputLabel>
+                            <Select
+                              labelId="category-label"
+                              id="category"
+                              name="category"
+                              value={formData.category}
+                              onChange={handleInputChange}
+                              label="Lĩnh vực"
+                              startAdornment={
+                                <InputAdornment position="start">
+                                  <CategoryIcon color="primary" />
+                                </InputAdornment>
+                              }
+                            >
+                              {categories.map((category) => (
+                                <MenuItem
+                                  key={category.value}
+                                  value={category.value}
+                                >
+                                  {category.label}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                      <FormControl fullWidth required sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}>
-                        <InputLabel id="type-label">Loại hình công việc</InputLabel>
-                        <Select
-                          labelId="type-label"
-                          id="type"
-                          name="type"
-                          value={formData.type}
-                          onChange={handleInputChange}
-                          label="Loại hình công việc"
-                          startAdornment={
-                            <InputAdornment position="start">
-                              <WorkOutlineIcon color="primary" />
-                            </InputAdornment>
-                          }
-                        >
-                          {jobTypes.map((type) => (
-                            <MenuItem key={type.value} value={type.value}>
-                              {type.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <FormControl
+                            fullWidth
+                            required
+                            sx={{
+                              "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                            }}
+                          >
+                            <InputLabel id="type-label">
+                              Loại hình công việc
+                            </InputLabel>
+                            <Select
+                              labelId="type-label"
+                              id="type"
+                              name="type"
+                              value={formData.type}
+                              onChange={handleInputChange}
+                              label="Loại hình công việc"
+                              startAdornment={
+                                <InputAdornment position="start">
+                                  <WorkOutlineIcon color="primary" />
+                                </InputAdornment>
+                              }
+                            >
+                              {jobTypes.map((type) => (
+                                <MenuItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                      <FormControl fullWidth sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}>
-                        <InputLabel id="experience-label">Kinh nghiệm</InputLabel>
-                        <Select
-                          labelId="experience-label"
-                          id="experience"
-                          name="experience"
-                          value={formData.experience}
-                          onChange={handleInputChange}
-                          label="Kinh nghiệm"
-                          startAdornment={
-                            <InputAdornment position="start">
-                              <WorkHistoryIcon color="primary" />
-                            </InputAdornment>
-                          }
-                        >
-                          {experienceLevels.map((level) => (
-                            <MenuItem key={level.value} value={level.value}>
-                              {level.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <FormControl
+                            fullWidth
+                            sx={{
+                              "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                            }}
+                          >
+                            <InputLabel id="experience-label">
+                              Kinh nghiệm
+                            </InputLabel>
+                            <Select
+                              labelId="experience-label"
+                              id="experience"
+                              name="experience"
+                              value={formData.experience}
+                              onChange={handleInputChange}
+                              label="Kinh nghiệm"
+                              startAdornment={
+                                <InputAdornment position="start">
+                                  <WorkHistoryIcon color="primary" />
+                                </InputAdornment>
+                              }
+                            >
+                              {experienceLevels.map((level) => (
+                                <MenuItem key={level.value} value={level.value}>
+                                  {level.label}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                      <LocalizationProvider dateAdapter={AdapterDateFns}>
-                        <DatePicker
-                          label="Hạn nộp hồ sơ"
-                          value={formData.deadline}
-                          onChange={handleDeadlineChange}
-                          slotProps={{
-                            textField: {
-                              fullWidth: true,
-                              InputProps: {
-                                startAdornment: (
-                                  <InputAdornment position="start">
-                                    <CalendarMonthOutlinedIcon color="primary" />
-                                  </InputAdornment>
-                                ),
-                              },
-                              sx: { "& .MuiOutlinedInput-root": { borderRadius: 2 } }
-                            },
-                          }}
-                        />
-                      </LocalizationProvider>
-                    </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <LocalizationProvider dateAdapter={AdapterDateFns}>
+                            <DatePicker
+                              label="Hạn nộp hồ sơ"
+                              value={formData.deadline}
+                              onChange={handleDeadlineChange}
+                              slotProps={{
+                                textField: {
+                                  fullWidth: true,
+                                  InputProps: {
+                                    startAdornment: (
+                                      <InputAdornment position="start">
+                                        <CalendarMonthOutlinedIcon color="primary" />
+                                      </InputAdornment>
+                                    ),
+                                  },
+                                  sx: {
+                                    "& .MuiOutlinedInput-root": {
+                                      borderRadius: 2,
+                                    },
+                                  },
+                                },
+                              }}
+                            />
+                          </LocalizationProvider>
+                        </Grid>
+                      </>
+                    ) : (
+                      // Form cho bài tìm việc
+                      <>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            required
+                            fullWidth
+                            id="location"
+                            name="location"
+                            label="Địa điểm mong muốn"
+                            value={formData.location}
+                            onChange={handleInputChange}
+                            placeholder="Ví dụ: Hà Nội, Hồ Chí Minh, ..."
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <LocationOnOutlinedIcon color="primary" />
+                                </InputAdornment>
+                              ),
+                            }}
+                            sx={{
+                              "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                            }}
+                          />
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <Box sx={{ px: 2 }}>
+                            <Typography gutterBottom>
+                              Mức lương mong muốn (triệu VND)
+                            </Typography>
+                            <Slider
+                              value={[formData.salaryMin, formData.salaryMax]}
+                              onChange={handleSalaryRangeChange}
+                              valueLabelDisplay="auto"
+                              valueLabelFormat={valueLabelFormat}
+                              min={0}
+                              max={100}
+                              step={1}
+                              marks={[
+                                { value: 0, label: "0" },
+                                { value: 25, label: "25" },
+                                { value: 50, label: "50" },
+                                { value: 75, label: "75" },
+                                { value: 100, label: "100+" },
+                              ]}
+                              sx={{
+                                color: theme.palette.primary.main,
+                                "& .MuiSlider-thumb": {
+                                  width: 24,
+                                  height: 24,
+                                  backgroundColor: "white",
+                                  border: "2px solid currentColor",
+                                  "&:hover, &.Mui-focusVisible": {
+                                    boxShadow:
+                                      "0 0 0 8px rgba(100, 108, 255, 0.16)",
+                                  },
+                                },
+                                "& .MuiSlider-track": {
+                                  height: 4,
+                                },
+                                "& .MuiSlider-rail": {
+                                  height: 4,
+                                  opacity: 0.5,
+                                },
+                                "& .MuiSlider-mark": {
+                                  width: 2,
+                                  height: 2,
+                                  backgroundColor: "currentColor",
+                                },
+                                "& .MuiSlider-markLabel": {
+                                  fontSize: "0.75rem",
+                                  color: "text.secondary",
+                                },
+                              }}
+                            />
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ mt: 1 }}
+                            >
+                              {formData.salaryMin === formData.salaryMax
+                                ? `${formData.salaryMin} triệu VND`
+                                : `${formData.salaryMin} - ${formData.salaryMax} triệu VND`}
+                            </Typography>
+                          </Box>
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <FormControl
+                            fullWidth
+                            required
+                            sx={{
+                              "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                            }}
+                          >
+                            <InputLabel id="category-label">
+                              Lĩnh vực mong muốn
+                            </InputLabel>
+                            <Select
+                              labelId="category-label"
+                              id="category"
+                              name="category"
+                              value={formData.category}
+                              onChange={handleInputChange}
+                              label="Lĩnh vực mong muốn"
+                              startAdornment={
+                                <InputAdornment position="start">
+                                  <CategoryIcon color="primary" />
+                                </InputAdornment>
+                              }
+                            >
+                              {categories.map((category) => (
+                                <MenuItem
+                                  key={category.value}
+                                  value={category.value}
+                                >
+                                  {category.label}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <FormControl
+                            fullWidth
+                            required
+                            sx={{
+                              "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                            }}
+                          >
+                            <InputLabel id="type-label">
+                              Loại hình công việc mong muốn
+                            </InputLabel>
+                            <Select
+                              labelId="type-label"
+                              id="type"
+                              name="type"
+                              value={formData.type}
+                              onChange={handleInputChange}
+                              label="Loại hình công việc mong muốn"
+                              startAdornment={
+                                <InputAdornment position="start">
+                                  <WorkOutlineIcon color="primary" />
+                                </InputAdornment>
+                              }
+                            >
+                              {jobTypes.map((type) => (
+                                <MenuItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                          <FormControl
+                            fullWidth
+                            sx={{
+                              "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                            }}
+                          >
+                            <InputLabel id="experience-label">
+                              Kinh nghiệm hiện tại
+                            </InputLabel>
+                            <Select
+                              labelId="experience-label"
+                              id="experience"
+                              name="experience"
+                              value={formData.experience}
+                              onChange={handleInputChange}
+                              label="Kinh nghiệm hiện tại"
+                              startAdornment={
+                                <InputAdornment position="start">
+                                  <WorkHistoryIcon color="primary" />
+                                </InputAdornment>
+                              }
+                            >
+                              {experienceLevels.map((level) => (
+                                <MenuItem key={level.value} value={level.value}>
+                                  {level.label}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                      </>
+                    )}
                   </Grid>
                 </Box>
               </CardContent>
             </Card>
 
             <Grid container spacing={4}>
-              <Grid item xs={12} md={6}>
-                <Card elevation={4} sx={{ borderRadius: 3, height: "100%" }}>
-                  <Box 
-                    sx={{ 
-                      backgroundColor: theme.palette.background.paper, 
-                      py: 2, 
-                      px: 3,
-                      borderBottom: `1px solid ${theme.palette.divider}`
-                    }}
-                  >
-                    <Typography variant="h6" fontWeight={600} color="primary.main">
-                      Yêu cầu công việc
-                    </Typography>
-                  </Box>
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-                      <TextField
-                        fullWidth
-                        id="requirement-input"
-                        value={requirementInput}
-                        onChange={(e) => setRequirementInput(e.target.value)}
-                        label="Thêm yêu cầu"
-                        placeholder="Nhập yêu cầu và nhấn thêm"
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addRequirement();
-                          }
+              {formData.postType === "hiring" ? (
+                // Form cho bài tuyển người
+                <>
+                  <Grid item xs={12} md={6}>
+                    <Card
+                      elevation={4}
+                      sx={{ borderRadius: 3, height: "100%" }}
+                    >
+                      <Box
+                        sx={{
+                          backgroundColor: theme.palette.background.paper,
+                          py: 2,
+                          px: 3,
+                          borderBottom: `1px solid ${theme.palette.divider}`,
                         }}
-                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-                      />
-                      <Button
-                        variant="contained"
-                        onClick={addRequirement}
-                        sx={{ px: 2, borderRadius: 2 }}
-                        startIcon={<AddCircleOutlineIcon />}
                       >
-                        Thêm
-                      </Button>
-                    </Box>
-                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                      {formData.requirements.length > 0 ? (
-                        formData.requirements.map((req, index) => (
-                          <Chip
-                            key={index}
-                            label={req}
-                            onDelete={() => removeRequirement(index)}
-                            color="primary"
-                            sx={{ m: 0.5, borderRadius: 2, '& .MuiChip-deleteIcon': { color: 'rgba(255, 255, 255, 0.7)' } }}
-                          />
-                        ))
-                      ) : (
-                        <Typography variant="body2" color="text.secondary" sx={{ py: 2, fontStyle: 'italic' }}>
-                          Chưa có yêu cầu nào được thêm vào
+                        <Typography
+                          variant="h6"
+                          fontWeight={600}
+                          color="primary.main"
+                        >
+                          Yêu cầu công việc
                         </Typography>
-                      )}
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
+                      </Box>
+                      <CardContent sx={{ p: 3 }}>
+                        <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+                          <TextField
+                            fullWidth
+                            id="requirement-input"
+                            value={requirementInput}
+                            onChange={(e) =>
+                              setRequirementInput(e.target.value)
+                            }
+                            label="Thêm yêu cầu"
+                            placeholder="Nhập yêu cầu và nhấn thêm"
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                addRequirement();
+                              }
+                            }}
+                            sx={{
+                              "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                            }}
+                          />
+                          <Button
+                            variant="contained"
+                            onClick={addRequirement}
+                            sx={{ px: 2, borderRadius: 2 }}
+                            startIcon={<AddCircleOutlineIcon />}
+                          >
+                            Thêm
+                          </Button>
+                        </Box>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                          {formData.requirements.length > 0 ? (
+                            formData.requirements.map((req, index) => (
+                              <Chip
+                                key={index}
+                                label={req}
+                                onDelete={() => removeRequirement(index)}
+                                color="primary"
+                                sx={{
+                                  m: 0.5,
+                                  borderRadius: 2,
+                                  "& .MuiChip-deleteIcon": {
+                                    color: "rgba(255, 255, 255, 0.7)",
+                                  },
+                                }}
+                              />
+                            ))
+                          ) : (
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ py: 2, fontStyle: "italic" }}
+                            >
+                              Chưa có yêu cầu nào được thêm vào
+                            </Typography>
+                          )}
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
 
-              <Grid item xs={12} md={6}>
-                <Card elevation={4} sx={{ borderRadius: 3, height: "100%" }}>
-                  <Box 
-                    sx={{ 
-                      backgroundColor: theme.palette.background.paper, 
-                      py: 2, 
-                      px: 3,
-                      borderBottom: `1px solid ${theme.palette.divider}`
-                    }}
-                  >
-                    <Typography variant="h6" fontWeight={600} color="primary.main">
-                      Quyền lợi
-                    </Typography>
-                  </Box>
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-                      <TextField
-                        fullWidth
-                        id="benefit-input"
-                        value={benefitInput}
-                        onChange={(e) => setBenefitInput(e.target.value)}
-                        label="Thêm quyền lợi"
-                        placeholder="Nhập quyền lợi và nhấn thêm"
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addBenefit();
-                          }
+                  <Grid item xs={12} md={6}>
+                    <Card
+                      elevation={4}
+                      sx={{ borderRadius: 3, height: "100%" }}
+                    >
+                      <Box
+                        sx={{
+                          backgroundColor: theme.palette.background.paper,
+                          py: 2,
+                          px: 3,
+                          borderBottom: `1px solid ${theme.palette.divider}`,
                         }}
-                        sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-                      />
-                      <Button
-                        variant="contained"
-                        onClick={addBenefit}
-                        sx={{ px: 2, borderRadius: 2 }}
-                        color="success"
-                        startIcon={<AddCircleOutlineIcon />}
                       >
-                        Thêm
-                      </Button>
-                    </Box>
-                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                      {formData.benefits.length > 0 ? (
-                        formData.benefits.map((benefit, index) => (
-                          <Chip
-                            key={index}
-                            label={benefit}
-                            onDelete={() => removeBenefit(index)}
-                            color="success"
-                            sx={{ m: 0.5, borderRadius: 2, '& .MuiChip-deleteIcon': { color: 'rgba(255, 255, 255, 0.7)' } }}
-                          />
-                        ))
-                      ) : (
-                        <Typography variant="body2" color="text.secondary" sx={{ py: 2, fontStyle: 'italic' }}>
-                          Chưa có quyền lợi nào được thêm vào
+                        <Typography
+                          variant="h6"
+                          fontWeight={600}
+                          color="primary.main"
+                        >
+                          Quyền lợi
                         </Typography>
-                      )}
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
+                      </Box>
+                      <CardContent sx={{ p: 3 }}>
+                        <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+                          <TextField
+                            fullWidth
+                            id="benefit-input"
+                            value={benefitInput}
+                            onChange={(e) => setBenefitInput(e.target.value)}
+                            label="Thêm quyền lợi"
+                            placeholder="Nhập quyền lợi và nhấn thêm"
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                addBenefit();
+                              }
+                            }}
+                            sx={{
+                              "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                            }}
+                          />
+                          <Button
+                            variant="contained"
+                            onClick={addBenefit}
+                            sx={{ px: 2, borderRadius: 2 }}
+                            color="success"
+                            startIcon={<AddCircleOutlineIcon />}
+                          >
+                            Thêm
+                          </Button>
+                        </Box>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                          {formData.benefits.length > 0 ? (
+                            formData.benefits.map((benefit, index) => (
+                              <Chip
+                                key={index}
+                                label={benefit}
+                                onDelete={() => removeBenefit(index)}
+                                color="success"
+                                sx={{
+                                  m: 0.5,
+                                  borderRadius: 2,
+                                  "& .MuiChip-deleteIcon": {
+                                    color: "rgba(255, 255, 255, 0.7)",
+                                  },
+                                }}
+                              />
+                            ))
+                          ) : (
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ py: 2, fontStyle: "italic" }}
+                            >
+                              Chưa có quyền lợi nào được thêm vào
+                            </Typography>
+                          )}
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </>
+              ) : (
+                // Form cho bài tìm việc
+                <>
+                  <Grid item xs={12} md={6}>
+                    <Card
+                      elevation={4}
+                      sx={{ borderRadius: 3, height: "100%" }}
+                    >
+                      <Box
+                        sx={{
+                          backgroundColor: theme.palette.background.paper,
+                          py: 2,
+                          px: 3,
+                          borderBottom: `1px solid ${theme.palette.divider}`,
+                        }}
+                      >
+                        <Typography
+                          variant="h6"
+                          fontWeight={600}
+                          color="primary.main"
+                        >
+                          Kỹ năng
+                        </Typography>
+                      </Box>
+                      <CardContent sx={{ p: 3 }}>
+                        <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+                          <TextField
+                            fullWidth
+                            id="requirement-input"
+                            value={requirementInput}
+                            onChange={(e) =>
+                              setRequirementInput(e.target.value)
+                            }
+                            label="Thêm kỹ năng"
+                            placeholder="Nhập kỹ năng và nhấn thêm"
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                addRequirement();
+                              }
+                            }}
+                            sx={{
+                              "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                            }}
+                          />
+                          <Button
+                            variant="contained"
+                            onClick={addRequirement}
+                            sx={{ px: 2, borderRadius: 2 }}
+                            startIcon={<AddCircleOutlineIcon />}
+                          >
+                            Thêm
+                          </Button>
+                        </Box>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                          {formData.requirements.length > 0 ? (
+                            formData.requirements.map((req, index) => (
+                              <Chip
+                                key={index}
+                                label={req}
+                                onDelete={() => removeRequirement(index)}
+                                color="primary"
+                                sx={{
+                                  m: 0.5,
+                                  borderRadius: 2,
+                                  "& .MuiChip-deleteIcon": {
+                                    color: "rgba(255, 255, 255, 0.7)",
+                                  },
+                                }}
+                              />
+                            ))
+                          ) : (
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ py: 2, fontStyle: "italic" }}
+                            >
+                              Chưa có kỹ năng nào được thêm vào
+                            </Typography>
+                          )}
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <Card
+                      elevation={4}
+                      sx={{ borderRadius: 3, height: "100%" }}
+                    >
+                      <Box
+                        sx={{
+                          backgroundColor: theme.palette.background.paper,
+                          py: 2,
+                          px: 3,
+                          borderBottom: `1px solid ${theme.palette.divider}`,
+                        }}
+                      >
+                        <Typography
+                          variant="h6"
+                          fontWeight={600}
+                          color="primary.main"
+                        >
+                          Mong muốn
+                        </Typography>
+                      </Box>
+                      <CardContent sx={{ p: 3 }}>
+                        <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+                          <TextField
+                            fullWidth
+                            id="benefit-input"
+                            value={benefitInput}
+                            onChange={(e) => setBenefitInput(e.target.value)}
+                            label="Thêm mong muốn"
+                            placeholder="Nhập mong muốn và nhấn thêm"
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                addBenefit();
+                              }
+                            }}
+                            sx={{
+                              "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                            }}
+                          />
+                          <Button
+                            variant="contained"
+                            onClick={addBenefit}
+                            sx={{ px: 2, borderRadius: 2 }}
+                            color="success"
+                            startIcon={<AddCircleOutlineIcon />}
+                          >
+                            Thêm
+                          </Button>
+                        </Box>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                          {formData.benefits.length > 0 ? (
+                            formData.benefits.map((benefit, index) => (
+                              <Chip
+                                key={index}
+                                label={benefit}
+                                onDelete={() => removeBenefit(index)}
+                                color="success"
+                                sx={{
+                                  m: 0.5,
+                                  borderRadius: 2,
+                                  "& .MuiChip-deleteIcon": {
+                                    color: "rgba(255, 255, 255, 0.7)",
+                                  },
+                                }}
+                              />
+                            ))
+                          ) : (
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ py: 2, fontStyle: "italic" }}
+                            >
+                              Chưa có mong muốn nào được thêm vào
+                            </Typography>
+                          )}
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </>
+              )}
             </Grid>
 
-            <Card elevation={4} sx={{ borderRadius: 3, mt: 4, overflow: "hidden" }}>
-              <Box 
-                sx={{ 
-                  backgroundColor: theme.palette.background.paper, 
-                  py: 2, 
+            <Card
+              elevation={4}
+              sx={{ borderRadius: 3, mt: 4, overflow: "hidden" }}
+            >
+              <Box
+                sx={{
+                  backgroundColor: theme.palette.background.paper,
+                  py: 2,
                   px: 3,
-                  borderBottom: `1px solid ${theme.palette.divider}`
+                  borderBottom: `1px solid ${theme.palette.divider}`,
                 }}
               >
                 <Typography variant="h6" fontWeight={600} color="primary.main">
-                  Mô tả công việc
+                  {formData.postType === "hiring"
+                    ? "Mô tả công việc"
+                    : "Mô tả hồ sơ"}
                 </Typography>
               </Box>
               <CardContent sx={{ p: 4 }}>
@@ -666,19 +1235,26 @@ function EditPost() {
                   rows={8}
                   value={formData.description}
                   onChange={handleInputChange}
-                  placeholder="Mô tả chi tiết về công việc, trách nhiệm, quyền lợi, ..."
+                  placeholder={
+                    formData.postType === "hiring"
+                      ? "Mô tả chi tiết về công việc, trách nhiệm, quyền lợi, ..."
+                      : "Mô tả chi tiết về bản thân, kinh nghiệm làm việc, mục tiêu nghề nghiệp, ..."
+                  }
                   InputProps={{
                     startAdornment: (
-                      <InputAdornment position="start" sx={{ alignSelf: 'flex-start', mt: 1.5, mr: 2 }}>
+                      <InputAdornment
+                        position="start"
+                        sx={{ alignSelf: "flex-start", mt: 1.5, mr: 2 }}
+                      >
                         <AssignmentIcon color="primary" />
                       </InputAdornment>
                     ),
                   }}
-                  sx={{ 
-                    "& .MuiOutlinedInput-root": { 
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
                       borderRadius: 2,
-                      pl: 0.5
-                    } 
+                      pl: 0.5,
+                    },
                   }}
                 />
               </CardContent>
@@ -692,26 +1268,34 @@ function EditPost() {
 
             {deleteConfirm && (
               <Alert severity="warning" sx={{ mt: 4, mb: 2, borderRadius: 2 }}>
-                Bạn có chắc chắn muốn xóa bài đăng này? Hành động này không thể hoàn tác.
+                Bạn có chắc chắn muốn xóa bài đăng này? Hành động này không thể
+                hoàn tác.
               </Alert>
             )}
 
-            <Paper elevation={3} sx={{ 
-              position: "sticky", 
-              bottom: 0, 
-              left: 0, 
-              right: 0, 
-              p: 3, 
-              mt: 4, 
-              borderRadius: 3, 
-              display: "flex", 
-              justifyContent: "space-between", 
-              alignItems: "center",
-              backgroundColor: "rgba(255, 255, 255, 0.9)",
-              backdropFilter: "blur(10px)"
-            }}>
-              <Tooltip 
-                title={deleteConfirm ? "Nhấn để xác nhận xóa" : "Nhấn để xóa bài đăng"} 
+            <Paper
+              elevation={3}
+              sx={{
+                position: "sticky",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                p: 3,
+                mt: 4,
+                borderRadius: 3,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                backgroundColor: "rgba(255, 255, 255, 0.9)",
+                backdropFilter: "blur(10px)",
+              }}
+            >
+              <Tooltip
+                title={
+                  deleteConfirm
+                    ? "Nhấn để xác nhận xóa"
+                    : "Nhấn để xóa bài đăng"
+                }
                 arrow
                 TransitionComponent={Fade}
                 TransitionProps={{ timeout: 600 }}
@@ -722,10 +1306,10 @@ function EditPost() {
                   startIcon={<DeleteOutlineIcon />}
                   onClick={handleDelete}
                   disabled={submitLoading}
-                  sx={{ 
+                  sx={{
                     borderRadius: 2,
                     borderWidth: "2px",
-                    "&:hover": { borderWidth: "2px" }
+                    "&:hover": { borderWidth: "2px" },
                   }}
                 >
                   {deleteConfirm ? "Xác nhận xóa" : "Xóa bài đăng"}
@@ -745,13 +1329,17 @@ function EditPost() {
                   type="submit"
                   variant="contained"
                   disabled={submitLoading}
-                  startIcon={submitLoading ? <CircularProgress size={20} color="inherit" /> : null}
+                  startIcon={
+                    submitLoading ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : null
+                  }
                   onClick={handleSubmit}
-                  sx={{ 
+                  sx={{
                     borderRadius: 2,
-                    px: 3, 
+                    px: 3,
                     py: 1,
-                    boxShadow: 2
+                    boxShadow: 2,
                   }}
                 >
                   {submitLoading ? "Đang cập nhật..." : "Cập nhật"}

@@ -40,6 +40,7 @@ import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import { useNavigate } from "react-router-dom";
 import { getMyJobs, deleteJob, updateJobStatus } from "../../api/jobs";
 import { useSnackbar } from "notistack";
+import { slugify } from "../../utils/slugify";
 
 // Hàm để định dạng ngày tháng
 const formatDate = (dateString) => {
@@ -177,50 +178,10 @@ function PostList() {
   };
 
   const handleApplyClick = (jobId, jobTitle) => {
-    // Kiểm tra jobId và jobTitle
-    if (!jobId) {
-      console.error("ID công việc không hợp lệ");
-      return;
-    }
+    // Tạo slug từ tiêu đề
+    const slug = slugify(jobTitle);
 
-    // Đặt giá trị mặc định nếu title không tồn tại
-    const title = jobTitle || "job-post";
-
-    try {
-      // Tạo slug an toàn từ tiêu đề
-      let slug = "";
-
-      try {
-        // Phương pháp 1: Sử dụng cách đơn giản, an toàn
-        slug = title
-          .toLowerCase()
-          .replace(/[^a-z0-9\s]/g, "") // Chỉ giữ chữ cái và số (không dấu)
-          .replace(/\s+/g, "-")
-          .replace(/-{2,}/g, "-")
-          .replace(/^-+|-+$/g, ""); // Loại bỏ dấu - ở đầu và cuối
-      } catch (e) {
-        console.warn("Lỗi khi tạo slug phương pháp 1:", e);
-        // Phương pháp 2: Nếu phương pháp 1 lỗi, tạo slug đơn giản
-        slug = "job-" + jobId;
-      }
-
-      // Đảm bảo slug không rỗng
-      if (!slug || slug.length === 0) {
-        slug = "job-" + jobId;
-      }
-
-      // Giới hạn độ dài để tránh URL quá dài
-      slug = slug.substring(0, 30);
-
-      // Thêm timeout nhỏ để tránh lỗi message channel
-      setTimeout(() => {
-        navigate(`/jobs/${slug}/${jobId}`);
-      }, 0);
-    } catch (error) {
-      console.error("Lỗi khi điều hướng:", error);
-      // Fallback an toàn nhất
-      window.location.href = `/jobs/${jobId}`;
-    }
+    navigate(`/jobs/${slug}/${jobId}`);
   };
 
   const handleDeletePost = async (id) => {
@@ -343,19 +304,6 @@ function PostList() {
                 />
               </form>
               <Box sx={{ display: "flex", gap: 2 }}>
-                <IconButton
-                  onClick={() => setShowFilters(!showFilters)}
-                  sx={{
-                    border: "1px solid",
-                    borderColor: "divider",
-                    borderRadius: 2,
-                    color: showFilters
-                      ? theme.palette.primary.main
-                      : "text.secondary",
-                  }}
-                >
-                  <FilterListIcon />
-                </IconButton>
                 <FormControl sx={{ minWidth: 180 }}>
                   <InputLabel id="sort-label">Sắp xếp theo</InputLabel>
                   <Select
@@ -464,6 +412,21 @@ function PostList() {
                                     ? "filled"
                                     : "outlined"
                                 }
+                                sx={{ borderRadius: 1 }}
+                              />
+                              <Chip
+                                label={
+                                  post.postType === "hiring"
+                                    ? "Tuyển người"
+                                    : "Tìm việc"
+                                }
+                                color={
+                                  post.postType === "hiring"
+                                    ? "primary"
+                                    : "secondary"
+                                }
+                                size="small"
+                                variant="outlined"
                                 sx={{ borderRadius: 1 }}
                               />
                               <Typography
@@ -617,7 +580,9 @@ function PostList() {
                               color="info"
                               size="small"
                               startIcon={<VisibilityIcon />}
-                              onClick={() => navigate(`/jobs/${post._id}`)}
+                              onClick={() =>
+                                handleApplyClick(post._id, post.title)
+                              }
                               sx={{ borderRadius: 2 }}
                             >
                               Xem

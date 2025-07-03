@@ -210,136 +210,63 @@ export const useCreatePostForm = () => {
   // Form submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitError(false);
+    setSubmitSuccess(false);
+    setFormErrors({});
 
-    // Kiểm tra người dùng đã đăng nhập chưa
-    if (!isAuthenticated()) {
-      // Hiển thị thông báo lỗi
-      setSubmitError(true);
-      setErrorMessage("Vui lòng đăng nhập để đăng bài");
+    // Validate các trường bắt buộc
+    const errors = {};
+    if (!formData.title) errors.title = "Vui lòng nhập tiêu đề";
+    if (!formData.location) errors.location = "Vui lòng nhập địa điểm";
+    if (!formData.category) errors.category = "Vui lòng chọn lĩnh vực";
+    if (!formData.type) errors.type = "Vui lòng chọn loại hình công việc";
+    if (!formData.description) errors.description = "Vui lòng nhập mô tả";
 
-      // Chuyển hướng đến trang đăng nhập sau 2 giây
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
-      return;
+    // Validate requirements và benefits
+    if (formData.postType === "hiring") {
+      if (formData.requirements.length === 0) {
+        errors.requirements = "Vui lòng thêm ít nhất một yêu cầu công việc";
+      }
+      if (formData.benefits.length === 0) {
+        errors.benefits = "Vui lòng thêm ít nhất một quyền lợi";
+      }
+    } else {
+      if (formData.requirements.length === 0) {
+        errors.requirements = "Vui lòng thêm ít nhất một kỹ năng";
+      }
+      if (formData.benefits.length === 0) {
+        errors.benefits = "Vui lòng thêm ít nhất một mong muốn";
+      }
     }
 
-    // Validate form
-    if (
-      !formData.title ||
-      !formData.location ||
-      !formData.category ||
-      !formData.description
-    ) {
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       setSubmitError(true);
-      setErrorMessage("Vui lòng điền đầy đủ các trường bắt buộc");
-      setTimeout(() => setSubmitError(false), 5000);
-      return;
-    }
-
-    // Kiểm tra CV đối với bài đăng tìm việc
-    if (postType === "seeking" && !cvFile) {
-      setSubmitError(true);
-      setErrorMessage("Vui lòng tải lên CV của bạn");
-      setTimeout(() => setSubmitError(false), 5000);
+      setErrorMessage("Vui lòng điền đầy đủ thông tin bắt buộc");
       return;
     }
 
     try {
       setIsSubmitting(true);
-
-      // Chuẩn bị dữ liệu gửi lên API
       const jobData = {
         ...formData,
-        postType: postType,
-        status: "active",
-        deadline: formData.deadline
-          ? formData.deadline.toISOString()
-          : undefined,
-        title: formData.title.trim(),
-        location: formData.location.trim(),
-        category: formData.category,
-        type: formData.type,
-        description: formData.description.trim(),
-        experience: formData.experience,
-        salary: `${formData.salaryRange[0]}-${formData.salaryRange[1]} triệu`,
-        salaryMin: formData.salaryRange[0],
-        salaryMax: formData.salaryRange[1],
-        industry:
-          postType === "hiring"
-            ? formData.industry || "Công nghệ thông tin"
-            : undefined,
-        companySize:
-          postType === "hiring"
-            ? formData.companySize || "Không xác định"
-            : undefined,
-        website: postType === "hiring" ? formData.website || "" : undefined,
-        applicants: 0,
-        views: 0,
-        requirements: Array.isArray(formData.requirements)
-          ? formData.requirements.filter(Boolean)
-          : [],
-        benefits: Array.isArray(formData.benefits)
-          ? formData.benefits.filter(Boolean)
-          : [],
+        deadline: formData.deadline ? formData.deadline.toISOString() : null,
       };
 
-      // Nếu có CV file, thêm vào formData để gửi
-      let formDataToSend;
-
-      if (postType === "seeking" && cvFile) {
-        // Sử dụng FormData khi có file cần gửi
-        const formDataWithFile = new FormData();
-
-        // Thêm tất cả dữ liệu job
-        Object.keys(jobData).forEach((key) => {
-          if (key === "requirements" || key === "benefits") {
-            // Chuyển đổi mảng thành chuỗi JSON
-            formDataWithFile.append(key, JSON.stringify(jobData[key]));
-          } else if (jobData[key] !== undefined && jobData[key] !== null) {
-            formDataWithFile.append(key, jobData[key]);
-          }
-        });
-
-        // Thêm file CV
-        formDataWithFile.append("cv", cvFile);
-        formDataWithFile.append("cvFileName", cvFileName);
-
-        formDataToSend = formDataWithFile;
-      } else {
-        formDataToSend = jobData;
-      }
-
-      // Gọi API tạo công việc với config phù hợp
-      const response = await createJob(
-        formDataToSend,
-        postType === "seeking" && cvFile
-      );
-
+      const response = await createJob(jobData);
       if (response.success) {
-        // Hiển thị thông báo thành công
         setSubmitSuccess(true);
-        setSuccessMessage(
-          "Đăng bài thành công! Bạn sẽ được chuyển hướng sau giây lát."
-        );
-
-        // Chuyển hướng sau khi đăng thành công
+        setSuccessMessage("Tạo bài đăng thành công!");
         setTimeout(() => {
-          setSubmitSuccess(false);
-          navigate("/dashboard"); // Redirect to dashboard after successful submit
-        }, 3000);
+          navigate("/posts");
+        }, 1500);
       } else {
-        // Hiển thị thông báo lỗi từ API
-        setSubmitError(true);
-        setErrorMessage(response.message || "Đã xảy ra lỗi khi đăng bài");
-        setTimeout(() => setSubmitError(false), 5000);
+        throw new Error(response.message || "Tạo bài đăng không thành công");
       }
     } catch (error) {
-      console.error("Lỗi khi đăng bài:", error);
-      // Hiển thị thông báo lỗi
+      console.error("Lỗi khi tạo bài đăng:", error);
       setSubmitError(true);
-      setErrorMessage(error.message || "Đã xảy ra lỗi khi đăng bài");
-      setTimeout(() => setSubmitError(false), 5000);
+      setErrorMessage(error.message || "Đã xảy ra lỗi khi tạo bài đăng");
     } finally {
       setIsSubmitting(false);
     }
